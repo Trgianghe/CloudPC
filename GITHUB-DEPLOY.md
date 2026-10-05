@@ -19,7 +19,8 @@ video/input đi qua WebRTC giữa thiết bị và host, không đi qua máy ch�
 5. Sao chép `client.config.example.json` thành file riêng, điền địa chỉ
    `wss://TEN-MIEN-HOST/signal`, phòng và **client_token** tương ứng.
    Không đưa file chứa token lên GitHub, không dùng host_token trên điện thoại.
-6. Mở Pages trên điện thoại, kéo thanh trắng sang trái → Nhập file config → Kết nối.
+6. Mở trang web chính trên Pages bằng điện thoại → Thêm PC → Nhập file config
+   client → Kết nối ngay. Cloud Settings nằm trong phiên PC: kéo thanh trắng sang trái.
    Web tự dùng ICE servers do signaling đã xác thực cung cấp.
 
 Không dùng `127.0.0.1` trên điện thoại: đó là chính điện thoại.

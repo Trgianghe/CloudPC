@@ -35,13 +35,16 @@ def main():
         raise RuntimeError('Complete GitHub CLI device login first.')
     repo=api(f'repos/{REPO}')
     branch=repo['default_branch']
-    if repo['size']==0:
+    try:
+        ref=api(f'repos/{REPO}/git/ref/heads/{branch}')
+    except RuntimeError as error:
+        if not any(code in str(error) for code in ('404','409')):raise
         api(f'repos/{REPO}/contents/README.md','PUT',{'message':'Initialize CloudPC source repository','content':base64.b64encode(b'# CloudPC\n').decode(),'branch':branch})
-    ref=api(f'repos/{REPO}/git/ref/heads/{branch}')
+        ref=api(f'repos/{REPO}/git/ref/heads/{branch}')
     parent=ref['object']['sha']
     commit=api(f'repos/{REPO}/git/commits/{parent}')
     tree=api(f'repos/{REPO}/git/trees','POST',{'base_tree':commit['tree']['sha'],'tree':entries})
-    authored=api(f'repos/{REPO}/git/commits','POST',{'message':'Add Windows Cloud PC host, WebRTC player and GitHub Pages deployment','tree':tree['sha'],'parents':[parent]})
+    authored=api(f'repos/{REPO}/git/commits','POST',{'message':'Publish main CloudPC website with integrated session settings and client config import','tree':tree['sha'],'parents':[parent]})
     api(f'repos/{REPO}/git/refs/heads/{branch}','PATCH',{'sha':authored['sha'],'force':False})
     print('Published commit:',authored['sha'])
     # Enable Pages from Actions; public static UI contains no access credentials.

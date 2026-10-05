@@ -47,7 +47,8 @@ if __name__=='__main__':
     with zipfile.ZipFile(output/'CloudPC-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
         for p in files:archive.write(p,p.relative_to(ROOT).as_posix())
     with zipfile.ZipFile(output/'CloudPC-pages.zip','w',zipfile.ZIP_DEFLATED) as archive:
-        for p in (ROOT/'pages-dist').iterdir():archive.write(p,p.name)
+        for p in (ROOT/'pages-dist').rglob('*'):
+            if p.is_file():archive.write(p,p.relative_to(ROOT/'pages-dist').as_posix())
     manifest='\n'.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT).as_posix()}' for p in files)
     (output/'source-manifest.txt').write_text(manifest,encoding='utf-8')
     print(f'Packaged {len(files)} source files; credential scan passed.')

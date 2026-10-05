@@ -5,6 +5,15 @@
     try { config=JSON.parse(text.replace(/^\uFEFF/,'')); }
     catch { throw new Error('File không phải JSON hợp lệ. Hãy chọn config.json của PC host.'); }
     if(!config || typeof config!=='object' || Array.isArray(config)) throw new Error('Cấu hình phải là một đối tượng JSON.');
+    if(config.host_token)throw new Error('Chọn cấu hình client; không nhập khóa host quản trị.');
+    if(config.client_token){
+      if(typeof config.client_token!=='string'||config.client_token.length<32||config.client_token.startsWith('REPLACE-'))throw new Error('Mã client không hợp lệ.');
+      let endpoint;try{endpoint=new URL(config.signaling);}catch{throw new Error('Config client cần địa chỉ signaling WSS của host.');}
+      if(!['wss:','ws:'].includes(endpoint.protocol)||endpoint.username||endpoint.password||endpoint.search||endpoint.hash)throw new Error('Địa chỉ signaling phải là WS/WSS và không chứa token.');
+      if(currentOrigin.startsWith('https:')&&endpoint.protocol!=='wss:')throw new Error('Trang HTTPS cần host WSS.');
+      const room=config.room||'my-pc';if(typeof room!=='string'||room.length>64||!room)throw new Error('Phòng PC không hợp lệ.');
+      return {name:config.name||'My Gaming PC',url:endpoint.origin.replace(/^wss:/,'https:').replace(/^ws:/,'http:'),code:config.client_token,nativeRoom:room,nativeSignaling:endpoint.href,width:1280,fps:120,bitrate:15};
+    }
     const code=config.access_code ?? config.code;
     if(typeof code!=='string' || !code.trim() || code.length>512) throw new Error('File thiếu mã access_code hợp lệ.');
     if(code.startsWith('CHANGE-')) throw new Error('Đây là file cấu hình mẫu. Hãy chọn config.json thật của PC host.');

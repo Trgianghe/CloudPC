@@ -45,6 +45,7 @@ function setMode(mode) { activeMode = mode; $$('[data-mode]').forEach(b => b.cla
 function openConnection(machine=null) {
   const f = $('#connection-form'); f.reset(); editingMachine = machine?.id || null; $('#form-error').textContent = ''; setMode(machine?.mode || 'webrtc');
   f.elements.code.value=machine?.code||'';f.elements.rememberConfig.checked=machine?.rememberConfig!==false;
+  f.dataset.nativeRoom=machine?.nativeRoom||'';f.dataset.nativeSignaling=machine?.nativeSignaling||'';
   f.elements.name.value = machine?.name || 'My Gaming PC'; f.elements.url.value = machine?.url || location.origin;
   for (const field of ['host','port','username','external','width','fps','bitrate']) if (machine?.[field]) f.elements[field].value = machine[field];
   $('#connection-dialog').showModal();
@@ -56,6 +57,7 @@ function readMachine() {
   if (activeMode === 'webrtc') { machine.url = safeURL(f.elements.url.value.trim()).origin; machine.width = Number(f.elements.width.value); machine.fps = Number(f.elements.fps.value); machine.bitrate=Number(f.elements.bitrate.value);machine.rememberConfig=f.elements.rememberConfig.checked;if(machine.rememberConfig&&f.elements.code.value.trim())machine.code=f.elements.code.value.trim(); }
   if (activeMode === 'rdp') { machine.host = f.elements.host.value.trim(); machine.port = Number(f.elements.port.value); machine.username = f.elements.username.value.trim(); if (!/^[a-zA-Z0-9.\-:\[\]]{1,253}$/.test(machine.host) || !Number.isInteger(machine.port) || machine.port < 1 || machine.port > 65535 || /[\r\n]/.test(machine.username)) throw new Error('Nhập IP/hostname, cổng và tài khoản hợp lệ.'); }
   if (activeMode === 'parsec') machine.external='https://web.parsec.app/';
+  if(activeMode==='webrtc'&&f.dataset.nativeSignaling){const endpoint=new URL(f.dataset.nativeSignaling);if(endpoint.origin.replace(/^wss:/,'https:').replace(/^ws:/,'http:')===machine.url){machine.nativeRoom=f.dataset.nativeRoom;machine.nativeSignaling=endpoint.href;}}
   if (activeMode === 'external') machine.external = safeURL(f.elements.external.value.trim()).href;
   return machine;
 }
@@ -119,6 +121,7 @@ $('#import-connection-config').onchange=async e=>{
     if(!$('#connection-dialog').open)return;
     const form=$('#connection-form');setMode('webrtc');editingMachine=machines.find(m=>m.mode==='webrtc'&&m.url===parsed.url&&m.name===parsed.name)?.id||editingMachine;
     for(const field of ['name','url','code','width','fps','bitrate'])form.elements[field].value=parsed[field];
+    form.dataset.nativeRoom=parsed.nativeRoom||'';form.dataset.nativeSignaling=parsed.nativeSignaling||'';
     toast('Đã tự điền cấu hình. Kiểm tra địa chỉ rồi nhấn Kết nối ngay.');
   }catch(error){$('#form-error').textContent=error.message;}
   finally{e.target.value='';}
