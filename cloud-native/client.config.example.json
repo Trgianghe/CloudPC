@@ -1,0 +1,5 @@
+{
+  "signaling": "wss://pc.example.com/signal",
+  "room": "my-pc",
+  "client_token": "REPLACE-WITH-PRIVATE-CLIENT-TOKEN-FROM-SERVER"
+}

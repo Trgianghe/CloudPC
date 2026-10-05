@@ -1,0 +1,23 @@
+{
+  "host": "0.0.0.0",
+  "public_origin": "",
+  "port": 8443,
+  "access_code": "CHANGE-THIS-TO-A-LONG-PRIVATE-CODE",
+  "name": "My Gaming PC",
+  "monitor": 1,
+  "max_width": 2560,
+  "max_fps": 120,
+  "ice_servers": [
+    {
+      "urls": "stun:stun.l.google.com:19302"
+    }
+  ],
+  "tls_cert": "",
+  "tls_key": "",
+  "max_bitrate_mbps": 50,
+  "encoder": "auto",
+  "capture": "auto",
+  "dxgi_device": 0,
+  "dxgi_output": 0,
+  "native_capture": "auto"
+}

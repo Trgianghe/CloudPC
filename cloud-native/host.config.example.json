@@ -1,0 +1,15 @@
+{
+  "signaling": "ws://127.0.0.1:9443/signal",
+  "room": "my-pc",
+  "host_token": "REPLACE-WITH-HOST-TOKEN-FROM-SERVER-CONFIG",
+  "ffmpeg": "ffmpeg.exe",
+  "encoder": "nvenc",
+  "capture_mode": "gpu",
+  "adapter": 0,
+  "output": 0,
+  "audio": true,
+  "audio_endpoint": "",
+  "vigem_dll": "bin/ViGEmClient.dll",
+  "allow_reboot": false,
+  "view_only": false
+}

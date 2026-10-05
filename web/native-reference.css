@@ -1,0 +1,287 @@
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      /* Không hiện icon kéo chuột hoặc text selection */
+      
+    }
+
+    button, input[type="range"], .switch, .switch input {
+      cursor: pointer;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #viewport {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      background: #000000;
+      overflow: hidden;
+    }
+
+    /* THANH TRẮNG DỌC DÀI HƠN Ở GÓC TRÊN BÊN PHẢI */
+    #edge-handle {
+      position: fixed;
+      top: 24px;
+      right: 0;
+      width: 6px;
+      height: 104px; /* Tăng chiều dài thanh trắng lên gấp đôi */
+      background-color: #ffffff;
+      border-radius: 4px 0 0 4px;
+      z-index: 100;
+      touch-action: none;
+      opacity: 0.92;
+      box-shadow: -1px 0 8px rgba(255, 255, 255, 0.25);
+      transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s ease;
+    }
+
+    #edge-handle.hidden {
+      opacity: 0 !important;
+      pointer-events: none;
+      transform: translateX(100%);
+    }
+
+    /* Lớp phủ làm tối màn hình */
+    #backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 90;
+      transition: opacity 0.25s ease;
+    }
+
+    #backdrop.active {
+      pointer-events: auto;
+    }
+
+    /* Khung cài đặt dạng ô vuông nhỏ gọn */
+    #settings {
+      position: fixed;
+      top: 20px;
+      right: 16px;
+      width: 310px;
+      height: 330px;
+      background: #111113;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      z-index: 95;
+      display: flex;
+      flex-direction: column;
+      color: #fafafa;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9);
+      transform: translateX(340px);
+      touch-action: pan-y;
+      will-change: transform;
+    }
+
+    #settings.animating {
+      transition: transform 0.32s cubic-bezier(0.18, 0.9, 0.28, 1);
+    }
+
+    /* Header của ô vuông */
+    #settings header {
+      padding: 12px 14px;
+      border-bottom: 1px solid #1f1f23;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    #settings h1 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: #e4e4e7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      background-color: #22c55e;
+      border-radius: 50%;
+    }
+
+    #close {
+      background: none;
+      border: none;
+      color: #71717a;
+      font-size: 18px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+
+    #close:hover {
+      color: #fff;
+      background: #27272a;
+    }
+
+    /* Nội dung cuộn bên trong */
+    .scroll {
+      padding: 12px 14px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .scroll::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 4px;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .caption {
+      font-size: 11px;
+      color: #a1a1aa;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #bitrate {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      accent-color: #ffffff;
+      outline: none;
+    }
+
+    .group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .group button {
+      padding: 6px 0;
+      font-size: 11px;
+      background: #18181b;
+      border: 1px solid #27272a;
+      color: #a1a1aa;
+      border-radius: 6px;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .group button.selected {
+      background: #27272a;
+      border-color: #52525b;
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #d4d4d8;
+    }
+
+    .switch {
+      position: relative;
+      width: 32px;
+      height: 18px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-toggle {
+      position: absolute;
+      inset: 0;
+      background-color: #27272a;
+      border-radius: 18px;
+      transition: 0.2s;
+    }
+
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+
+    input:checked + .slider-toggle {
+      background-color: #3b82f6;
+    }
+
+    input:checked + .slider-toggle:before {
+      transform: translateX(14px);
+    }
+
+    .action {
+      width: 100%;
+      padding: 8px;
+      font-size: 11px;
+      border: 1px solid #27272a;
+      background: #18181b;
+      color: #ef4444;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .action:hover {
+      background: #27272a;
+    }
+  
+/* Actual player controls use the reference shell and the same compact visual language. */
+#settings{transform:none;animation:none;max-width:calc(100vw - 24px);max-height:calc(100dvh - 40px)}
+#settings header{background:transparent;flex-shrink:0}#settings h1{margin:0;letter-spacing:.5px}
+#edge-handle{padding:0;border:0}#edge-handle span{display:none}
+#backdrop:not([hidden]){opacity:1;pointer-events:auto}
+.scroll{font-size:12px;min-height:0;overscroll-behavior:contain;scroll-behavior:smooth}
+.section{margin:0}.caption{margin-bottom:6px}.card{padding:0;background:none;border:0;border-radius:0}
+.group button{font-family:inherit;font-size:11px}.action{width:100%;font-family:inherit;font-size:11px;padding:8px}
+.actions .action{width:auto}.stats{font-family:inherit;font-size:10px;background:none;border-bottom:1px solid #ffffff0c;flex-shrink:0}
+.stats b,.value{color:#ccc}.dot:not(.live){background:#71717a}.dot.live{background:#86b86a}
+#bitrate{margin:0;height:16px}.range-labels{display:none}.toggle{background:#333;width:34px;height:18px}
+.toggle[aria-checked=true]{background:#3b82f6}.toggle[aria-checked=true] i{transform:translateX(16px)}
+.muted,.status{font-size:10px;line-height:1.5;margin:0}.input-guide{padding:0!important}
+.input{background:#1a1a1c;border-color:#333;font-family:inherit}.metric-detail{font-family:inherit;font-size:10px}
+.sep{border-color:#2a2a2c}.disconnect{color:#ef4444}.connect{color:#ddd;border-color:#333}
+.scroll input[type=checkbox]{accent-color:#3b82f6}.scroll button:disabled{opacity:.35;cursor:not-allowed}
+#controls{z-index:20}body.editing #controls{z-index:96}#edit-note{z-index:97}#toast{z-index:110}
+
+.action{color:#ccc}.action.disconnect{color:#ef4444}.action.reboot{color:#e2ac49}
+
+/* Larger drag target; the visible white handle remains 6px wide. */
+#edge-handle{width:28px;background:transparent;box-shadow:none;border-radius:0}
+#edge-handle::after{content:'';position:absolute;right:0;top:0;width:6px;height:104px;background:#fff;border-radius:4px 0 0 4px;box-shadow:-1px 0 8px #ffffff40}
+#presets{grid-template-columns:repeat(4,1fr)}.advanced-stack{display:flex;flex-direction:column;gap:14px;padding-top:12px}
+#settings{contain:layout paint}#settings details>summary{font-size:12px;color:#ccc}
+#latency-mode{margin-bottom:10px}#sensitivity-value{font-size:11px;color:#bbb}

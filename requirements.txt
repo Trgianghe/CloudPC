@@ -1,0 +1,5 @@
+aiohttp>=3.11,<4
+aiortc==1.15.0
+mss>=10,<11
+numpy>=2,<3
+dxcam>=0.0.5,<1; sys_platform == 'win32'

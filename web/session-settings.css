@@ -1,0 +1,42 @@
+.touch-key{min-width:0;min-height:0;padding:4px;white-space:normal;overflow:hidden;overflow-wrap:anywhere}
+.settings-handle{position:absolute;right:max(18px,env(safe-area-inset-right));top:14px;z-index:8;display:flex;align-items:center;gap:8px;padding:13px 15px;background:#241c33dd;border:1px solid #80639f;border-radius:12px;color:#dfc6ff;touch-action:none;box-shadow:0 3px 18px #0007}
+.settings-handle .handle-bar{width:32px;height:4px;background:#c9a3fa;border-radius:5px}
+.settings-handle small{font-size:10px}
+.settings-drawer{position:absolute;right:12px;top:68px;width:min(328px,calc(100% - 24px));max-height:calc(100% - 82px);overflow-y:auto;overscroll-behavior:contain;z-index:9;padding:19px;background:#191322f2;border:1px solid #62467f;border-radius:16px;box-shadow:0 12px 55px #000a;backdrop-filter:blur(18px);touch-action:pan-y;user-select:text}
+.settings-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.settings-title h3{font-size:16px}
+.settings-drawer p{font-size:11px;color:#a89bb9;line-height:1.7}
+.settings-drawer label{font-size:11px;margin:12px 0}
+.settings-drawer .button{font-size:11px;padding:10px 12px}
+.settings-drawer .wide{width:100%}
+.settings-divider{height:1px;background:#493254;margin:16px 0}
+.settings-row{display:flex;gap:8px}
+.settings-row>*{flex:1}
+.settings-row input[type=range]{padding:0}
+.profile-entry{display:flex;gap:8px;margin:7px 0}
+.profile-entry button{flex:1;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:#251c30;border:1px solid #4b355c;border-radius:9px;padding:11px;color:#e1cdee;font-size:12px}
+.profile-entry button.active{border-color:#af7ae3;background:#3a2651}
+.profile-entry small{font-size:9px;color:#ae9aba;white-space:nowrap}
+.profile-empty{color:#9985ac;font-size:11px;padding:11px 0}
+.selected-settings{padding:13px;background:#211829;border:1px solid #483153;border-radius:10px}
+.selected-settings h4{margin:0;font-size:12px}
+.settings-drawer input[type=range]{accent-color:#b886f4}
+.edit-banner{position:absolute;left:12px;top:12px;z-index:7;display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #9f7744;border-radius:10px;background:#2d221be8;color:#f8dbb1;max-width:calc(100% - 172px);font-size:11px}
+.edit-banner strong{font-size:10px}
+.edit-banner button{background:#523b28;border:1px solid #9a7150;border-radius:6px;color:#ffe1b6;padding:7px;white-space:nowrap;font-size:10px}
+.touch-key.shape-circle{border-radius:50%!important}
+.touch-key.shape-square{border-radius:8px!important}
+.touch-key.selected-control{outline:3px solid #ffdc91;outline-offset:3px}
+.session-settings-open .touch-key:not(.editing){pointer-events:none}
+.session-editing #stage{background:#0d0712}
+.session-editing #stage:after{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(#f5d5ff09 1px,transparent 1px),linear-gradient(90deg,#f5d5ff09 1px,transparent 1px);background-size:32px 32px}
+.session-editing #touch-controls{z-index:2}
+.session-editing .touch-key{cursor:grab}
+.session-editing .touch-key:active{cursor:grabbing}
+.profile-save-status{font-size:10px;color:#dfb4fd;min-height:15px;margin:9px 0 0}
+.settings-drawer .check-label{flex-direction:row}
+.settings-drawer .check-label input{width:auto}
+.settings-caption{font-size:10px;color:#a99db7;padding-top:10px}
+.settings-drawer .error{color:#ffb2bf}
+@media(max-width:600px){.settings-handle{right:10px;top:10px;padding:12px}.settings-handle small{display:none}.settings-drawer{top:57px}.edit-banner{font-size:9px;gap:5px;padding:8px;max-width:calc(100% - 89px)}.edit-banner strong{font-size:9px}.edit-banner .edit-explanation{display:none}.edit-banner button{font-size:9px;padding:7px}}
+@media(max-height:500px){.settings-drawer{top:53px;max-height:calc(100% - 64px);padding:13px}.settings-handle{top:6px;padding:10px}.edit-banner{top:6px}}

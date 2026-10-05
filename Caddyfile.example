@@ -1,0 +1,5 @@
+# Run the PC host bound to 127.0.0.1 when using this reverse proxy.
+# Replace pc.example.com with your domain pointing to this host/proxy.
+pc.example.com {
+    reverse_proxy 127.0.0.1:8443
+}

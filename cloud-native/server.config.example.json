@@ -1,0 +1,12 @@
+{
+  "bind": "127.0.0.1",
+  "port": 9443,
+  "public_origin": "",
+  "client_origins": ["https://trgianghe.github.io"],
+  "tls_cert": "",
+  "tls_key": "",
+  "ice_servers": [{"urls": ["stun:stun.l.google.com:19302"]}],
+  "rooms": {
+    "my-pc": {"client_token": "REPLACE-WITH-32-PLUS-RANDOM-CHARACTERS", "host_token": "REPLACE-WITH-A-DIFFERENT-RANDOM-TOKEN"}
+  }
+}
