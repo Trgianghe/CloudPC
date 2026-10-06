@@ -26,7 +26,7 @@
     $('#session').classList.add('native-session');immersive(true);
     frame=document.createElement('iframe');frame.id='native-player';frame.title='Cloud PC';
     frame.allow='autoplay; fullscreen; gamepad';frame.src=playerURL();
-    frame.onload=()=>{if(current===pending){if(config.signaling)frame.contentDocument.getElementById('signal-url').value=config.signaling;frame.contentWindow.postMessage({type:'pccloud-connect',config,localInput:true,bitrate:machine.bitrate||15,fps:machine.fps||120,preset:machine.width<=1280?'720p120':'1080p120'},location.origin);}};
+    frame.onload=()=>{if(current===pending){if(config.signaling)frame.contentDocument.getElementById('signal-url').value=config.signaling;frame.contentWindow.postMessage({type:'pccloud-connect',config,localInput:true,bitrate:machine.bitrate||15,fps:machine.fps||120,preset:machine.width>=3840?'4k60':machine.width>=2560?'2k60':machine.width<=1280?'720p120':'1080p120'},location.origin);}};
     $('#session').append(frame);
   };
   $('#disconnect').onclick=()=>disconnect();

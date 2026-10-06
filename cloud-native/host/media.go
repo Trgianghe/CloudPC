@@ -30,7 +30,7 @@ type StreamSettings struct {
 func (s StreamSettings) Dimensions() (int, int, int) {
 	fps := s.FPS
 	if fps == 0 {
-		if s.Preset == "1080p120" {
+		if s.Preset == "1080p120" || s.Preset == "720p120" {
 			fps = 120
 		} else {
 			fps = 60
@@ -51,8 +51,8 @@ func (s StreamSettings) Validate() error {
 	if s.PlayoutDelay != 0 && s.PlayoutDelay != 30 {
 		return fmt.Errorf("invalid playout delay")
 	}
-	if s.FPS != 0 && s.FPS != 60 && s.FPS != 120 && s.FPS != 144 {
-		return fmt.Errorf("FPS must be 60, 120 or 144")
+	if s.FPS != 0 && s.FPS != 60 && s.FPS != 120 && s.FPS != 144 && s.FPS != 160 {
+		return fmt.Errorf("FPS must be 60, 120, 144 or 160")
 	}
 	if s.Bitrate < 5 || s.Bitrate > 100 {
 		return fmt.Errorf("bitrate must be 5..100 Mbps")

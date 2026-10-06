@@ -16,6 +16,18 @@ func videoRTPCommand(config Config, settings StreamSettings, port int) []string 
 	args := videoCommand(config, settings)
 	// Replace only the elementary-stream muxer. Encoder/capture settings stay identical.
 	args = args[:len(args)-3]
+	// DXGI timestamps can begin after encoder initialization. CFR would fill
+	// that gap with duplicate frames and queue stale pictures. Forward capture
+	// timestamps at RTP's 90 kHz precision instead of manufacturing target FPS.
+	var realtime []string
+	for i := 0; i < len(args); i++ {
+		if args[i] == "-r" || args[i] == "-fps_mode" {
+			i++
+			continue
+		}
+		realtime = append(realtime, args[i])
+	}
+	args = append(realtime, "-enc_time_base", "1:90000", "-fps_mode", "passthrough")
 	return append(args, "-payload_type", "96", "-f", "rtp", fmt.Sprintf("rtp://127.0.0.1:%d?pkt_size=1200", port))
 }
 

@@ -89,6 +89,9 @@ func (s *Session) RestartVideo(settings StreamSettings) error {
 	if settings.Codec != s.settings.Codec {
 		return fmt.Errorf("codec change needs a new SDP offer")
 	}
+	if s.connected && s.videoCancel != nil && settings == s.settings {
+		return nil
+	}
 	s.settings = settings
 	if !s.connected {
 		return nil

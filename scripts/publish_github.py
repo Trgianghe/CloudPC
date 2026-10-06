@@ -44,7 +44,7 @@ def main():
     parent=ref['object']['sha']
     commit=api(f'repos/{REPO}/git/commits/{parent}')
     tree=api(f'repos/{REPO}/git/trees','POST',{'base_tree':commit['tree']['sha'],'tree':entries})
-    authored=api(f'repos/{REPO}/git/commits','POST',{'message':'Apply Liquid Glass inspired styling to the main CloudPC website and in-session settings','tree':tree['sha'],'parents':[parent]})
+    authored=api(f'repos/{REPO}/git/commits','POST',{'message':'Fix 2K quality mapping and H264 frame duplication; add 160 FPS and live path diagnostics','tree':tree['sha'],'parents':[parent]})
     api(f'repos/{REPO}/git/refs/heads/{branch}','PATCH',{'sha':authored['sha'],'force':False})
     print('Published commit:',authored['sha'])
     # Enable Pages from Actions; public static UI contains no access credentials.

@@ -36,7 +36,7 @@
     if(!['http:','https:'].includes(url.protocol)||url.username||url.password) throw new Error('URL cần dùng HTTP/HTTPS và không chứa tài khoản hoặc mật khẩu.');
     return {name:name.trim(),url:url.origin,code,
       width:[1280,1920,2560,3840].filter(w=>w<=Number(config.width??config.max_width??1920)).at(-1)||1280,
-      fps:[30,60,90,120].filter(f=>f<=Number(config.fps??config.max_fps??60)).at(-1)||30,
+      fps:[30,60,90,120,144,160].filter(f=>f<=Number(config.fps??config.max_fps??60)).at(-1)||30,
       bitrate:[12,20,35,50].filter(b=>b<=Number(config.bitrate??config.max_bitrate_mbps??20)).at(-1)||12};
   }
   if(typeof module==='object'&&module.exports) module.exports={parseConnectionConfig};

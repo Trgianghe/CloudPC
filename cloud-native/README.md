@@ -162,3 +162,17 @@ Nguồn kỹ thuật: [Pion](https://github.com/pion/webrtc), [NVENC Programming
 Cloud Settings dùng kiểu trong test2.html mới: hộp 310x330, thanh trắng dọc 6x104, các lựa chọn màu xám, kéo mở theo tay. Trong menu có checkbox **Điều khiển thử trên chính host**. Bật checkbox, đợi phiên nối lại rồi đóng menu để gửi click/phím. Mặc định cùng host vẫn chỉ xem; quyền view_only cấu hình của host luôn được giữ. Chế độ thử không gửi chuyển động chuột liên tục, chỉ định vị khi bấm và tạm bỏ qua click/cuộn do chính phiên đó tiêm lại. Con trỏ Windows vẫn có thể đổi vị trí/focus khi click; đây không phải hai con trỏ Windows độc lập. Gaming 360 độ dùng thiết bị khác. Capture DXGI vẫn draw_mouse=0; không thể xóa con trỏ đã được game/driver vẽ sẵn vào hình.
 
 Checkbox **Ẩn các nút cảm ứng** có hiệu lực ngay và lưu lựa chọn trong trình duyệt. FPS 60/120/144 là mục tiêu encode, không thay đổi tần số quét màn hình/driver. V-Sync do trình duyệt quản lý.
+
+## Kiểm chứng độ trễ và 2K/160 FPS (2026-10-06)
+
+- Trang chính chuyển đúng 1440p sang preset 2K, 4K sang 4K; trước đây mọi cấu hình trên 720p bị chuyển về 1080p.
+- Host và web nhận 160 FPS. Đây là mục tiêu capture, không phải cam kết FPS thực nhận.
+- H.264 RTP dùng timestamp capture 90 kHz, passthrough thay cho CFR: không nhân các frame cũ để đạt số FPS yêu cầu. NVENC vẫn P1/ULL, không B-frame/lookahead, VBV một frame. Gói RTP được chuyển ngay tới Pion, không đợi AUD frame tiếp theo.
+- Gửi lại cùng cấu hình không còn khởi động lại encoder. Thay độ phân giải/bitrate vẫn khởi động lại FFmpeg; chưa có NVENC reconfigure trực tiếp hoặc congestion controller điều chỉnh bitrate như Parsec.
+- Cloud Settings báo P2P/TURN, RTT ICE, FPS giải mã và FPS trình bày bằng requestVideoFrameCallback. Các số này không đo click-to-photon và không xác nhận màn hình vật lý đã quét hình.
+
+Đo trên host hiện tại: DXGI -> CPU scale/pad -> NVENC, yêu cầu 2560x1440/160, 40 Mbps. Bài CFR 6 giây xuất 958 frame nhưng 917 là frame nhân; không dùng kết quả đó làm bằng chứng 160 FPS. Bài passthrough 8 giây xuất 526 frame, không nhân frame, khoảng 64 FPS trung bình gồm khởi động. Bài timestamp 90 kHz 4 giây hết lỗi DTS, 242 frame, không nhân frame. Đây là desktop benchmark, chưa phải gameplay hoặc đo điện thoại qua Internet. Máy đang dùng copy mode vì GPU scaling trên adapter màn hình chưa chạy được trong thử nghiệm trước. Chưa đạt chuẩn 2K160 của người dùng.
+
+Để đánh giá FPS game: host phải render game và màn hình capture đủ Hz, khách phải có màn hình/decoder đủ nhanh; kiểm tra FPS trình bày, mất gói và decode/buffer khi game đang chạy. Để đo phản hồi thật, quay camera tốc độ cao đồng thời thao tác và màn hình khách, đếm frame đến phản hồi. Kiểm tra cả LAN và Internet; cần địa chỉ HTTPS host cùng cấu hình TURN nếu NAT không kết nối trực tiếp. GitHub Pages chỉ phục vụ client.
+
+Nguồn kiến trúc: [Parsec overview](https://support.parsec.app/hc/en-us/articles/32361354307348-Overview), [NVIDIA FFmpeg SDK](https://docs.nvidia.com/video-technologies/video-codec-sdk/13.1/ffmpeg-with-nvidia-gpu/index.html), [Moonlight latency metrics](https://github.com/moonlight-stream/moonlight-docs/wiki/Frequently-Asked-Questions). Parsec công bố khoảng 7 ms cộng thêm trong thử nghiệm LAN của họ và sử dụng zero-copy GPU cùng bitrate thích nghi; không phải 0 ms.
