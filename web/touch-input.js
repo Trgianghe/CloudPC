@@ -14,6 +14,7 @@
     if(!keys.length||keys.length>6||keys.some(k=>!Number.isInteger(k)||k<1||k>254))throw Error('Dùng Ctrl + C, Shift + W hoặc mã phím 17, 67; tối đa 6 phím.');
     return [...new Set(keys)];
   }
+  function withoutMovement(controls){return controls.filter(c=>!c.movement&&!(c.action==='key'&&c.keys?.length===1&&[87,65,83,68,38,37,40,39].includes(c.keys[0])));}
   function bindJoystick(button,control,options){
     button.classList.add('touch-joystick');button.textContent='';
     const knob=button.ownerDocument.createElement('span');knob.className='joystick-knob';knob.textContent=control.label||'Di chuyển';button.append(knob);
@@ -37,6 +38,6 @@
   }
   function resetAll(){for(const reset of active)reset();}
   function disposeAll(){resetAll();active.clear();}
-  root.CloudTouch={directions,combo,bindJoystick,resetAll,disposeAll};
+  root.CloudTouch={directions,combo,withoutMovement,bindJoystick,resetAll,disposeAll};
   if(typeof module==='object')module.exports=root.CloudTouch;
 })(globalThis);

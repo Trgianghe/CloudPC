@@ -17,3 +17,8 @@ test('drag changes held directions and cancel releases every key; second finger 
 test('edit drag never injects keys; disconnect reset releases input',()=>{
  touch.disposeAll();const f=fixture();f.edit();f.button.onpointerdown(f.event(120,60));f.button.onpointermove(f.event(80,60));assert.equal(f.calls.length,0);assert.equal(f.drags.length,1);touch.disposeAll();const g=fixture();g.button.onpointerdown(g.event(120,60));touch.resetAll();assert.deepEqual(g.calls,[[68,true],[68,false]]);g.block();g.button.onpointerdown(g.event(120,60));assert.equal(g.calls.length,2);touch.disposeAll();
 });
+
+test('switching movement style removes old directions but keeps shortcut and action buttons',()=>{
+ const list=[{action:'key',keys:[87]},{action:'key',keys:[17,87]},{action:'left',keys:[]},{action:'joystick',movement:true,keys:[87,65,83,68]}];
+ assert.deepEqual(touch.withoutMovement(list),[list[1],list[2]]);
+});
