@@ -11,3 +11,10 @@ test('dashboard profiles preserve combinations, opacity and identity across migr
  vm.runInContext("syncDashboardProfile('FPS');",context);
  const saved=JSON.parse(store.get('pccloud.profiles'));assert.equal(saved.profiles.length,1);assert.equal(saved.activeId,'old-id');assert.equal(saved.profiles[0].controls[0].opacity,65);assert.deepEqual(saved.profiles[0].controls[0].keys,[17,67]);
 });
+test('custom joystick directions and non-modifier combo survive profile migration',()=>{
+ const store=new Map(),context={crypto:{randomUUID:()=> 'id'},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},profiles:[],controls:[]};
+ store.set('pccloud.profiles',JSON.stringify({version:1,activeId:'layout',profiles:[{id:'layout',name:'Custom',controls:[{id:'rt',label:'R+T',keys:[82,84],action:'key',x:50,y:50,hold:true},{id:'stick',label:'Move',keys:[38,65,83,68],action:'joystick',shape:'circle',size:150,x:18,y:75}]}]}));
+ vm.createContext(context);vm.runInContext(validate+'\n'+sync+'\n'+migrate+'\nimportDashboardProfiles();syncDashboardProfile("Custom");',context);
+ const saved=JSON.parse(store.get('pccloud.profiles')).profiles[0].controls;
+ assert.deepEqual(saved[0].keys,[82,84]);assert.deepEqual(saved[1].keys,[38,65,83,68]);assert.equal(saved[1].action,'joystick');assert.equal(saved[1].size,150);
+});

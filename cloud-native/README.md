@@ -185,3 +185,7 @@ Trong Cloud Settings → Nút cảm ứng & profile → Chỉnh vị trí nút:
 - Nút phím hỗ trợ tổ hợp như Ctrl+C, Shift+W, Alt+Tab hoặc mã VK. Điện thoại có bộ chọn phím và checkbox Ctrl/Shift/Alt. Chọn giữ nút hoặc bấm một lần; phím bổ trợ được nhả theo thứ tự ngược.
 - Kiểu di chuyển có bộ 4 nút hướng và joystick tròn. Joystick dùng WASD hoặc mũi tên, có vùng chết ở tâm và 8 hướng; kéo chéo giữ đồng thời hai phím. Kích thước joystick tối đa 160 px, kéo đổi vị trí khi chỉnh.
 - Lưu profile để giữ combo, vị trí, kích thước và kiểu di chuyển. Thả tay, pointercancel, mất capture, đổi menu hoặc ngắt kết nối sẽ nhả phím. Joystick ánh xạ bàn phím, không gửi analog gamepad; game chỉ nhận tay cầm cần driver và chế độ gamepad riêng.
+
+
+### Bàn phím ảo và gán hướng tùy ý
+Nút phím chọn được tối đa sáu phím bất kỳ cùng lúc (ví dụ R + T), không giới hạn ở tổ hợp có modifier. Bấm Thêm ở giữa để tạo nút giữa màn hình và tự mở bàn phím ảo; hoặc Chạm để đặt nút rồi chạm vị trí trên màn hình. Bàn phím ảo cho chọn/bỏ chọn nhiều phím, nhập thủ công tên/mã VK và áp dụng. Joystick có bốn nút Lên/Xuống/Trái/Phải, mỗi hướng chọn riêng một phím bất kỳ. Profile lưu nguyên mapping tùy chỉnh. Luồng UI đã kiểm tra trên chế độ demo, còn việc game FC Online nhận input cần thử trong game trên máy khách.
