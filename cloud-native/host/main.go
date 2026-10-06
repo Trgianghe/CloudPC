@@ -68,7 +68,8 @@ type Session struct {
 	ctx            context.Context
 	cancel         context.CancelFunc
 	videoCancel    context.CancelFunc
-	video          *webrtc.TrackLocalStaticSample
+	video          webrtc.TrackLocal
+	rtpBridge      rtpBridge
 	audio          *webrtc.TrackLocalStaticSample
 	settings       StreamSettings
 	config         Config
@@ -104,7 +105,7 @@ func (s *Session) RestartVideo(settings StreamSettings) error {
 	}
 	_ = s.writer.Send(map[string]any{"type": "status", "status": map[string]any{"capture": capture, "mouseGeometry": streamGeometry(s.config, settings), "message": fmt.Sprintf("%s · %s · %d Mbps", settings.Preset, settings.Codec, settings.Bitrate)}})
 	go func() {
-		if err := VideoStream(ctx, s.config, settings, s.video); err != nil && ctx.Err() == nil {
+		if err := s.streamVideo(ctx, settings); err != nil && ctx.Err() == nil {
 			s.writer.Error(err)
 			s.Close()
 		}
@@ -141,7 +142,11 @@ func newSession(config Config, writer *SignalWriter, offer Message, ice []webrtc
 	if offer.Settings.Codec == "h264" {
 		capability.SDPFmtpLine = "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"
 	}
-	s.video, err = webrtc.NewTrackLocalStaticSample(capability, "desktop", "pccloud")
+	if offer.Settings.Codec == "h264" {
+		s.video, err = webrtc.NewTrackLocalStaticRTP(capability, "desktop", "pccloud")
+	} else {
+		s.video, err = webrtc.NewTrackLocalStaticSample(capability, "desktop", "pccloud")
+	}
 	if err != nil {
 		return fail(err)
 	}

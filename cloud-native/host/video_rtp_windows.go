@@ -1,0 +1,75 @@
+//go:build windows && amd64
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/pion/rtp"
+	"github.com/pion/webrtc/v4"
+	"log"
+	"net"
+	"time"
+)
+
+func videoRTPCommand(config Config, settings StreamSettings, port int) []string {
+	args := videoCommand(config, settings)
+	// Replace only the elementary-stream muxer. Encoder/capture settings stay identical.
+	args = args[:len(args)-3]
+	return append(args, "-payload_type", "96", "-f", "rtp", fmt.Sprintf("rtp://127.0.0.1:%d?pkt_size=1200", port))
+}
+
+func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings, track *webrtc.TrackLocalStaticRTP, bridge *rtpBridge) error {
+	socket, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	if err != nil {
+		return err
+	}
+	defer socket.Close()
+	// Local encoder socket only; never buffers multiple whole frames in userspace.
+	_ = socket.SetReadBuffer(1024 * 1024)
+	command := hiddenCommand(ctx, config.FFmpeg, videoRTPCommand(config, settings, socket.LocalAddr().(*net.UDPAddr).Port)...)
+	var stderr tailWriter
+	command.Stderr = &stderr
+	if err = command.Start(); err != nil {
+		return err
+	}
+	log.Print("H264 pipeline: encoder RTP -> WebRTC immediately, no Annex-B next-frame wait")
+	done := make(chan error, 1)
+	go func() { done <- command.Wait() }()
+	defer func() {
+		if command.Process != nil {
+			_ = command.Process.Kill()
+		}
+	}()
+	_, _, fps := settings.Dimensions()
+	forward := bridge.stream(fps, track.WriteRTP)
+	bytes := make([]byte, 2048)
+	for {
+		if ctx.Err() != nil {
+			return nil
+		}
+		select {
+		case exit := <-done:
+			return fmt.Errorf("RTP encoder stopped: %v %s", exit, stderr.String())
+		default:
+		}
+		_ = socket.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+		count, _, readErr := socket.ReadFromUDP(bytes)
+		if readErr != nil {
+			if timeout, ok := readErr.(net.Error); ok && timeout.Timeout() {
+				continue
+			}
+			return readErr
+		}
+		if ctx.Err() != nil {
+			return nil
+		}
+		var packet rtp.Packet
+		if err = packet.Unmarshal(bytes[:count]); err != nil {
+			return fmt.Errorf("invalid encoder RTP: %w", err)
+		}
+		if err = forward(&packet); err != nil {
+			return err
+		}
+	}
+}

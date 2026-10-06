@@ -285,3 +285,13 @@
 #presets{grid-template-columns:repeat(4,1fr)}.advanced-stack{display:flex;flex-direction:column;gap:14px;padding-top:12px}
 #settings{contain:layout paint}#settings details>summary{font-size:12px;color:#ccc}
 #latency-mode{margin-bottom:10px}#sensitivity-value{font-size:11px;color:#bbb}
+
+/* Match the website: quiet drawer handle, no white strip or glow. */
+#edge-handle::after{width:4px;height:52px;background:#779b86;box-shadow:none;opacity:.55;border-radius:3px 0 0 3px}
+#edge-handle:hover::after{opacity:1;background:#a4e9c0}
+#settings{background:#101c18;border-color:#263b2e;box-shadow:0 12px 36px #0008;transition:none}
+#settings header{border-bottom-color:#24372a}#settings .card{background:#15241d;border-color:#24372a}
+#settings .action,#settings .group button{background:#1b3024;border-color:#294233;color:#b9d9c5}
+#settings .group button.selected{background:#30523b;color:#d4f5df;border-color:#547e60}
+#settings input,#settings select{accent-color:#99deb1}#settings .input{background:#0d1913;border-color:#294333}
+#settings .dot.live{background:#9ee9ba}#settings .stats b,#settings .value{color:#a1dfb6}

@@ -36,6 +36,9 @@ https://docs.lizardbyte.dev/projects/sunshine/latest/
 
 Bản này dùng DXGI, NVENC P1/ULL, CBR, không B-frame/lookahead, VBV một frame,
 RTP playout-delay được thương lượng, input nhị phân qua DataChannel.
+H.264 hiện truyền RTP trực tiếp từ encoder qua socket loopback vào WebRTC;
+không dùng bước gom Annex-B chờ frame kế tiếp. Timestamp/sequence được giữ liên tục
+khi khởi động lại encoder do đổi chất lượng. AV1/HEVC vẫn dùng đường muxer trước đó.
 Preset FPS bắt đầu ở 720p120/15 Mbps; tăng lên 1080p khi decode/buffer ổn định.
 Chọn 60 FPS nếu điện thoại không duy trì 120 FPS; bitrate cao không tự giảm trễ.
 
