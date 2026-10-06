@@ -44,7 +44,7 @@ def main():
     parent=ref['object']['sha']
     commit=api(f'repos/{REPO}/git/commits/{parent}')
     tree=api(f'repos/{REPO}/git/trees','POST',{'base_tree':commit['tree']['sha'],'tree':entries})
-    authored=api(f'repos/{REPO}/git/commits','POST',{'message':'Redesign Cloud Settings and integrated layout studio; add profile JSON, custom FPS and serialized encoder restart','tree':tree['sha'],'parents':[parent]})
+    authored=api(f'repos/{REPO}/git/commits','POST',{'message':'Show saved Remote Desktop connection details and import RDP configuration','tree':tree['sha'],'parents':[parent]})
     api(f'repos/{REPO}/git/refs/heads/{branch}','PATCH',{'sha':authored['sha'],'force':False})
     print('Published commit:',authored['sha'])
     # Enable Pages from Actions; public static UI contains no access credentials.

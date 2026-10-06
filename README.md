@@ -140,3 +140,7 @@ Form kết nối có lựa chọn “Lưu cấu hình và mã truy cập trên t
 Cloud Settings dùng kiểu trong test2.html mới: hộp 310x330, thanh trắng dọc 6x104, các lựa chọn màu xám, kéo mở theo tay. Trong menu có checkbox **Điều khiển thử trên chính host**. Bật checkbox, đợi phiên nối lại rồi đóng menu để gửi click/phím. Mặc định cùng host vẫn chỉ xem; quyền view_only cấu hình của host luôn được giữ. Chế độ thử không gửi chuyển động chuột liên tục, chỉ định vị khi bấm và tạm bỏ qua click/cuộn do chính phiên đó tiêm lại. Con trỏ Windows vẫn có thể đổi vị trí/focus khi click; đây không phải hai con trỏ Windows độc lập. Gaming 360 độ dùng thiết bị khác. Capture DXGI vẫn draw_mouse=0; không thể xóa con trỏ đã được game/driver vẽ sẵn vào hình.
 
 Checkbox **Ẩn các nút cảm ứng** có hiệu lực ngay và lưu lựa chọn trong trình duyệt. FPS 60/120/144 là mục tiêu encode, không thay đổi tần số quét màn hình/driver. V-Sync do trình duyệt quản lý.
+
+### Remote Desktop đã lưu
+
+Trên thẻ PC RDP, bấm **Thông tin kết nối** để hiện IP/hostname, cổng và tài khoản, sao chép hoặc tải `.rdp`. Chỉ dùng **Sửa thông tin** khi cần đổi cấu hình. Trong tab Remote Desktop có danh sách PC RDP đã lưu. Có thể nhập JSON dạng `{"mode":"rdp","name":"Remote PC","host":"192.168.1.20","port":3389,"username":"Player"}`; mật khẩu không được nhập/lưu qua config này. File `.rdp` điền địa chỉ và tài khoản; mật khẩu do ứng dụng Remote Desktop quản lý. WebRTC host không tự cấp tài khoản Windows hoặc bật RDP.

@@ -31,7 +31,7 @@ function persistControls() { if(!layoutEditing) saveStore('pccloud.controls', co
 function toast(message) { clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').hidden = false; toastTimer = setTimeout(() => $('#toast').hidden = true, 4500); }
 function showView(name) { $$('.view').forEach(v => v.hidden = v.id !== name); $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === name)); $('#view-label').textContent = {home:'Tổng quan',machines:'Máy tính của tôi',controls:'Bộ điều khiển',guide:'Hướng dẫn kết nối'}[name]; window.scrollTo(0,0); }
 function machineCard(machine) {
-  return `<article class="machine-card"><div class="card-top"><span class="pc-icon">▣</span><span class="offline-label">${machine.mode === 'webrtc' ? 'WebRTC host' : machine.mode === 'rdp' ? 'Remote Desktop' : machine.mode === 'parsec' ? 'Parsec' : 'Web / App'}</span></div><h4>${escapeHTML(machine.name)}</h4><p>${escapeHTML(machine.url || machine.host || machine.external || '')}</p><div class="card-actions"><button class="button secondary" data-machine="${escapeHTML(machine.id)}">${machine.mode === 'rdp' ? 'Tải file RDP' : 'Kết nối'} ↗</button><button class="icon-button" data-edit-machine="${escapeHTML(machine.id)}" title="Cấu hình PC">⚙</button><button class="icon-button" data-share="${escapeHTML(machine.id)}" title="Sao chép link">↗</button><button class="icon-button" data-delete="${escapeHTML(machine.id)}" title="Xóa hồ sơ">×</button></div></article>`;
+  return `<article class="machine-card"><div class="card-top"><span class="pc-icon">▣</span><span class="offline-label">${machine.mode === 'webrtc' ? 'WebRTC host' : machine.mode === 'rdp' ? 'Remote Desktop' : machine.mode === 'parsec' ? 'Parsec' : 'Web / App'}</span></div><h4>${escapeHTML(machine.name)}</h4><p>${escapeHTML(machine.url || machine.host || machine.external || '')}</p><div class="card-actions"><button class="button secondary" data-machine="${escapeHTML(machine.id)}">${machine.mode === 'rdp' ? 'Thông tin kết nối' : 'Kết nối'} ↗</button><button class="icon-button" data-edit-machine="${escapeHTML(machine.id)}" title="Cấu hình PC">⚙</button><button class="icon-button" data-share="${escapeHTML(machine.id)}" title="Sao chép link">↗</button><button class="icon-button" data-delete="${escapeHTML(machine.id)}" title="Xóa hồ sơ">×</button></div></article>`;
 }
 function renderMachines() {
   const add = '<button class="add-card" data-action="add"><span>＋</span><strong>Thêm máy tính của bạn</strong><p>Kết nối PC Windows hoặc máy cloud<br>bạn có quyền truy cập.</p></button>';
@@ -41,7 +41,7 @@ function renderMachines() {
   for (const id of ['machine-count','list-count']) $(`#${id}`).textContent = machines.length;
   $('#saved-count').innerHTML = `${machines.length} <em>máy tính</em>`;
 }
-function setMode(mode) { activeMode = mode; $$('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode)); ['webrtc','rdp','external','parsec'].forEach(m => $(`#${m}-fields`).hidden = m !== mode); $('#connect-submit').textContent = mode === 'parsec' ? 'Mở Parsec ↗' : mode === 'rdp' ? 'Tải file .rdp ↓' : mode === 'external' ? 'Mở kết nối ↗' : 'Kết nối ngay ↗'; }
+function setMode(mode) { activeMode = mode; renderSavedRDP(); $$('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode)); ['webrtc','rdp','external','parsec'].forEach(m => $(`#${m}-fields`).hidden = m !== mode); $('#connect-submit').textContent = mode === 'parsec' ? 'Mở Parsec ↗' : mode === 'rdp' ? 'Tải file .rdp ↓' : mode === 'external' ? 'Mở kết nối ↗' : 'Kết nối ngay ↗'; }
 function openConnection(machine=null) {
   const f = $('#connection-form'); f.reset(); editingMachine = machine?.id || null; $('#form-error').textContent = ''; setMode(machine?.mode || 'webrtc');
   f.elements.code.value=machine?.code||'';f.elements.rememberConfig.checked=machine?.rememberConfig!==false;
@@ -55,7 +55,7 @@ function readMachine() {
   const f = $('#connection-form'); if (!f.elements.name.value.trim()) throw new Error('Nhập tên máy tính.');
   const machine = {id:editingMachine || uid(), mode:activeMode, name:f.elements.name.value.trim()};
   if (activeMode === 'webrtc') { machine.url = safeURL(f.elements.url.value.trim()).origin; machine.width = Number(f.elements.width.value); machine.fps = Number(f.elements.fps.value); machine.bitrate=Number(f.elements.bitrate.value);machine.rememberConfig=f.elements.rememberConfig.checked;if(machine.rememberConfig&&f.elements.code.value.trim())machine.code=f.elements.code.value.trim(); }
-  if (activeMode === 'rdp') { machine.host = f.elements.host.value.trim(); machine.port = Number(f.elements.port.value); machine.username = f.elements.username.value.trim(); if (!/^[a-zA-Z0-9.\-:\[\]]{1,253}$/.test(machine.host) || !Number.isInteger(machine.port) || machine.port < 1 || machine.port > 65535 || /[\r\n]/.test(machine.username)) throw new Error('Nhập IP/hostname, cổng và tài khoản hợp lệ.'); }
+  if (activeMode === 'rdp') { machine.host = f.elements.host.value.trim(); machine.port = Number(f.elements.port.value); machine.username = f.elements.username.value.trim(); CloudRDP.validate(machine); }
   if (activeMode === 'parsec') machine.external='https://web.parsec.app/';
   if(activeMode==='webrtc'&&f.dataset.nativeSignaling){const endpoint=new URL(f.dataset.nativeSignaling);if(endpoint.origin.replace(/^wss:/,'https:').replace(/^ws:/,'http:')===machine.url){machine.nativeRoom=f.dataset.nativeRoom;machine.nativeSignaling=endpoint.href;}}
   if (activeMode === 'external') machine.external = safeURL(f.elements.external.value.trim()).href;
@@ -63,7 +63,7 @@ function readMachine() {
 }
 function storeMachine(machine) { const index = machines.findIndex(m => m.id === machine.id); if (index >= 0) machines[index] = machine; else machines.push(machine); editingMachine = machine.id; saveStore('pccloud.machines', machines); renderMachines(); }
 function download(name, content, type) { const url = URL.createObjectURL(new Blob([content],{type})); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function downloadRDP(machine) { download('pc-cloud.rdp', `full address:s:${machine.host}:${machine.port}\r\nusername:s:${machine.username}\r\nprompt for credentials:i:1\r\nauthentication level:i:2\r\nscreen mode id:i:2\r\ndesktopwidth:i:1920\r\ndesktopheight:i:1080\r\naudiomode:i:0\r\nredirectclipboard:i:1\r\n`, 'application/x-rdp'); toast('Đã tải file RDP. Mở bằng ứng dụng Remote Desktop.'); }
+function downloadRDP(machine) { download('pc-cloud.rdp', `full address:s:${rdpAddress(machine)}\r\nusername:s:${machine.username}\r\nprompt for credentials:i:1\r\nauthentication level:i:2\r\nscreen mode id:i:2\r\ndesktopwidth:i:1920\r\ndesktopheight:i:1080\r\naudiomode:i:0\r\nredirectclipboard:i:1\r\n`, 'application/x-rdp'); toast('Đã tải file RDP. Mở bằng ứng dụng Remote Desktop.'); }
 function describeKeys(c) { if(c.action==='joystick')return 'Joystick · '+c.keys.map(k=>keyNames[k]||k).join(' / '); return c.action === 'key' ? c.keys.map(k => keyNames[k] || `VK ${k}`).join(' + ') : {'left':'Chuột trái','right':'Chuột phải','middle':'Chuột giữa'}[c.action]; }
 function renderControls() { $('#control-list').innerHTML = controls.map(c => `<article class="control-item"><span class="key-badge">${escapeHTML(c.label)}</span><div><strong>${escapeHTML(describeKeys(c))}</strong><small>${c.hold ? 'Giữ để thao tác' : 'Chạm để nhấn'}</small></div><div class="item-actions"><button class="icon-button" data-edit-control="${escapeHTML(c.id)}" title="Sửa nút">✎</button><button class="icon-button" data-remove-control="${escapeHTML(c.id)}" title="Xóa nút">×</button></div></article>`).join(''); }
 let recordedKeys = [];
@@ -106,7 +106,7 @@ document.addEventListener('click', async e => {
   const action=e.target.closest('[data-action]'); if(action){openConnection();return;}
   const close=e.target.closest('[data-close]'); if(close){$(`#${close.dataset.close}`).close();return;}
   const mode=e.target.closest('[data-mode]'); if(mode){setMode(mode.dataset.mode);return;}
-  const m=e.target.closest('[data-machine]'); if(m){const machine=machines.find(x=>x.id===m.dataset.machine);if(machine){if(machine.mode==='webrtc'&&machine.code){try{await connect(machine,machine.code);}catch(error){openConnection(machine);$('#form-error').textContent=error.message;}}else openConnection(machine);}return;}
+  const m=e.target.closest('[data-machine]'); if(m){const machine=machines.find(x=>x.id===m.dataset.machine);if(machine){if(machine.mode==='rdp'){showRDPDetails(machine);return;}if(machine.mode==='webrtc'&&machine.code){try{await connect(machine,machine.code);}catch(error){openConnection(machine);$('#form-error').textContent=error.message;}}else openConnection(machine);}return;}
   const editMachine=e.target.closest('[data-edit-machine]');if(editMachine){openConnection(machines.find(x=>x.id===editMachine.dataset.editMachine));return;}
   const del=e.target.closest('[data-delete]'); if(del){machines=machines.filter(x=>x.id!==del.dataset.delete);saveStore('pccloud.machines',machines);renderMachines();toast('Đã xóa hồ sơ PC trên trình duyệt này.');return;}
   const share=e.target.closest('[data-share]'); if(share){const machine=machines.find(x=>x.id===share.dataset.share);if(!machine)return;if(machine.mode==='rdp'){downloadRDP(machine);return;}const link=machine.mode==='webrtc'?`${machine.url}/?connect=1&name=${encodeURIComponent(machine.name)}`:machine.external;try{await navigator.clipboard.writeText(link);toast('Đã sao chép link. Người nhận cần mã truy cập riêng.');}catch{toast('Không sao chép được. Link PC: '+link);}return;}
@@ -122,15 +122,15 @@ $('#import-connection-config').onchange=async e=>{
     if(file.size>65536)throw new Error('File cấu hình quá lớn. Giới hạn 64 KB.');
     const parsed=parseConnectionConfig(await file.text(),location.origin);
     if(!$('#connection-dialog').open)return;
-    const form=$('#connection-form');setMode('webrtc');editingMachine=machines.find(m=>m.mode==='webrtc'&&m.url===parsed.url&&m.name===parsed.name)?.id||editingMachine;
-    for(const field of ['name','url','code','width','fps','bitrate'])form.elements[field].value=parsed[field];
+    const form=$('#connection-form');setMode(parsed.mode||'webrtc');editingMachine=machines.find(m=>m.mode===(parsed.mode||'webrtc')&&(parsed.mode==='rdp'?m.host===parsed.host:m.url===parsed.url)&&m.name===parsed.name)?.id||null;
+    for(const field of ['name','url','code','width','fps','bitrate','host','port','username'])if(parsed[field]!==undefined)form.elements[field].value=parsed[field];
     form.dataset.nativeRoom=parsed.nativeRoom||'';form.dataset.nativeSignaling=parsed.nativeSignaling||'';
-    toast('Đã tự điền cấu hình. Kiểm tra địa chỉ rồi nhấn Kết nối ngay.');
+    toast(parsed.mode==='rdp'?'Đã điền thông tin RDP. Lưu máy tính để dùng lại.':'Đã tự điền cấu hình. Kiểm tra địa chỉ rồi nhấn Kết nối ngay.');
   }catch(error){$('#form-error').textContent=error.message;}
   finally{e.target.value='';}
 };
 $('#save-pc').onclick=()=>{try{storeMachine(readMachine());$('#connection-dialog').close();toast('Đã lưu PC và lựa chọn lưu cấu hình.');}catch(e){$('#form-error').textContent=e.message;}};
-$('#connection-form').addEventListener('submit',async e=>{e.preventDefault();$('#form-error').textContent='';try{const machine=readMachine();const code=e.target.elements.code.value; if(machine.mode==='webrtc'&&machine.url===location.origin&&!code)throw new Error('Nhập mã truy cập trong config.json trên PC.'); storeMachine(machine);$('#connection-dialog').close();e.target.elements.code.value='';if(machine.mode==='rdp')downloadRDP(machine);else if(['external','parsec'].includes(machine.mode))window.open(machine.external,'_blank','noopener,noreferrer');else await connect(machine,code);}catch(error){if(!$('#connection-dialog').open)$('#connection-dialog').showModal();$('#form-error').textContent=error.message;}});
+$('#connection-form').addEventListener('submit',async e=>{e.preventDefault();$('#form-error').textContent='';try{const machine=readMachine();const code=e.target.elements.code.value; if(machine.mode==='webrtc'&&machine.url===location.origin&&!code)throw new Error('Nhập mã truy cập trong config.json trên PC.'); storeMachine(machine);$('#connection-dialog').close();e.target.elements.code.value='';if(machine.mode==='rdp')showRDPDetails(machine);else if(['external','parsec'].includes(machine.mode))window.open(machine.external,'_blank','noopener,noreferrer');else await connect(machine,code);}catch(error){if(!$('#connection-dialog').open)$('#connection-dialog').showModal();$('#form-error').textContent=error.message;}});
 $('#demo-button').onclick=async()=>{await disconnect();openSession('Khám phá PC Cloud',true);toast('Đây là giao diện mẫu. Chưa truyền hình ảnh hoặc điều khiển PC.');};
 $('#disconnect').onclick=disconnect;
 $('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('#session').requestFullscreen();}catch{toast('Trình duyệt này không hỗ trợ toàn màn hình. Hãy xoay ngang điện thoại.');}};
@@ -151,7 +151,7 @@ window.addEventListener('keyup',e=>{if(!activeSession)return;const c=heldInputs.
 window.addEventListener('blur',releaseAll);document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseAll();});window.addEventListener('pagehide',()=>{releaseAll();peer?.close();});
 const pointers=new Map();
 $('#device-label').innerHTML=matchMedia('(pointer:coarse)').matches?'Điện thoại <em>cảm ứng</em>':'Trình duyệt <em>bàn phím / chuột</em>';
-renderMachines();renderControls();buildKeyboard();
+renderMachines();renderControls();buildKeyboard();renderSavedRDP();
 const params=new URLSearchParams(location.search);if(params.get('connect')==='1'){openConnection({name:params.get('name')||'My Gaming PC',mode:'webrtc',url:location.origin});history.replaceState({},'',location.pathname);}
 
 // Clicking a dialog backdrop dismisses the open editor without submitting it.
@@ -162,3 +162,29 @@ $('#dashboard-add-movement').onclick=()=>{const stick=$('#dashboard-movement').v
 function pickDashboardKeys(){CloudKeyPicker.open({keys:recordedKeys,title:'Chọn các phím bấm cùng lúc · ví dụ R + T',onApply:keys=>{recordedKeys=keys;const f=$('#control-form');f.elements.keys.value=CloudKeyPicker.label(keys);f.elements.label.value=CloudKeyPicker.label(keys).slice(0,18);}});}
 $('#dashboard-pick-keys').onclick=pickDashboardKeys;
 function renderDashboardDirections(){const area=$('#joystick-direction-picker');area.replaceChildren();area.hidden=$('#control-form').elements.action.value!=='joystick';if(area.hidden)return;for(const index of [0,2,1,3]){const b=document.createElement('button');b.type='button';b.className='button secondary';b.textContent=['Lên','Trái','Xuống','Phải'][index]+': '+CloudKeyPicker.label([joystickDraft[index]]);b.onclick=()=>CloudKeyPicker.open({single:true,keys:[joystickDraft[index]],title:'Chọn phím hướng '+['lên','trái','xuống','phải'][index],onApply:keys=>{const next=[...joystickDraft];next[index]=keys[0];if(new Set(next).size!==4)throw Error('Bốn hướng cần bốn phím khác nhau.');joystickDraft=next;renderDashboardDirections();}});area.append(b);}}
+
+// Saved RDP endpoints are displayed directly; credentials remain managed by Windows.
+let displayedRDP = null;
+function rdpAddress(machine){return CloudRDP.address(machine);}
+function renderSavedRDP(){
+  const list=$('#saved-rdp-list');if(!list)return;list.replaceChildren();
+  for(const machine of machines.filter(m=>m.mode==='rdp')){
+    const button=document.createElement('button');button.type='button';button.className='button secondary';
+    button.textContent=machine.name+' · '+rdpAddress(machine);button.onclick=()=>{$('#connection-dialog').close();showRDPDetails(machine);};list.append(button);
+  }
+  $('#saved-rdp-section').hidden=!list.childElementCount;
+}
+function showRDPDetails(machine){
+  try{displayedRDP=CloudRDP.validate(machine);}catch(error){toast(error.message);return;}
+  $('#rdp-pc-name').textContent=machine.name;
+  $('#rdp-address').textContent=rdpAddress(displayedRDP);
+  $('#rdp-username').textContent=displayedRDP.username||'Chưa lưu tài khoản Windows';
+  $('#rdp-copy-username').disabled=!displayedRDP.username;
+  if(!$('#rdp-details').open)$('#rdp-details').showModal();
+}
+for(const [id,field] of [['rdp-copy-address','address'],['rdp-copy-username','username']])$('#'+id).onclick=async()=>{
+  const value=field==='address'?rdpAddress(displayedRDP):displayedRDP.username;
+  try{await navigator.clipboard.writeText(value);toast('Đã sao chép.');}catch{toast('Không sao chép tự động được. Chọn thông tin trên bảng để sao chép.');}
+};
+$('#rdp-download').onclick=()=>downloadRDP(displayedRDP);
+$('#rdp-edit').onclick=()=>{$('#rdp-details').close();openConnection(machines.find(m=>m.id===displayedRDP.id)||displayedRDP);};

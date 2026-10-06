@@ -14,6 +14,11 @@
       const room=config.room||'my-pc';if(typeof room!=='string'||room.length>64||!room)throw new Error('Phòng PC không hợp lệ.');
       return {name:config.name||'My Gaming PC',url:endpoint.origin.replace(/^wss:/,'https:').replace(/^ws:/,'http:'),code:config.client_token,nativeRoom:room,nativeSignaling:endpoint.href,width:1280,fps:120,bitrate:15};
     }
+    if(config.mode==='rdp'||config.type==='rdp'){
+      const host=String(config.host||'').trim(),port=Number(config.port??3389),username=String(config.username||'').trim(),name=config.name||'Remote PC';
+      if(!/^[a-zA-Z0-9.\-:\[\]]{1,253}$/.test(host)||['0.0.0.0','::','[::]'].includes(host)||!Number.isInteger(port)||port<1||port>65535||typeof name!=='string'||name.length>80||username.length>150||/[\r\n]/.test(username))throw new Error('Thông tin RDP không hợp lệ.');
+      return {mode:'rdp',name,host,port,username};
+    }
     const code=config.access_code ?? config.code;
     if(typeof code!=='string' || !code.trim() || code.length>512) throw new Error('File thiếu mã access_code hợp lệ.');
     if(code.startsWith('CHANGE-')) throw new Error('Đây là file cấu hình mẫu. Hãy chọn config.json thật của PC host.');
