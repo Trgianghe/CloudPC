@@ -3,6 +3,13 @@
   const apply=compact=>{document.body.classList.toggle('compact-ui',compact);density.setAttribute('aria-pressed',String(compact));density.textContent=compact?'Mở rộng giao diện':'Giao diện gọn';};
   let saved=false;try{saved=localStorage.getItem('pccloud.ui.compact')==='true';}catch{}
   apply(saved);
+  const glass=document.getElementById('glass-mode');
+  if(glass){
+    const setGlass=tinted=>{document.body.classList.toggle('glass-tinted',tinted);glass.setAttribute('aria-pressed',String(tinted));glass.textContent=tinted?'Kính trong':'Kính đậm';};
+    let tinted=false;try{tinted=localStorage.getItem('pccloud.ui.tinted')==='true';}catch{}
+    setGlass(tinted);
+    glass.addEventListener('click',()=>{const tinted=!document.body.classList.contains('glass-tinted');setGlass(tinted);try{localStorage.setItem('pccloud.ui.tinted',String(tinted));}catch{}});
+  }
   density.addEventListener('click',()=>{const compact=!document.body.classList.contains('compact-ui');apply(compact);try{localStorage.setItem('pccloud.ui.compact',String(compact));}catch{}});
   document.querySelectorAll('[data-performance]').forEach(button=>button.addEventListener('click',()=>{
     const profiles={fps:[1280,120,15],balanced:[1920,60,20],sharp:[2560,60,35]};
