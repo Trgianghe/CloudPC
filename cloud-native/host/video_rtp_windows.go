@@ -47,11 +47,12 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 	}
 	log.Print("H264 pipeline: encoder RTP -> WebRTC immediately, no Annex-B next-frame wait")
 	done := make(chan error, 1)
-	go func() { done <- command.Wait() }()
+	go func() { done <- command.Wait(); close(done) }()
 	defer func() {
 		if command.Process != nil {
 			_ = command.Process.Kill()
 		}
+		<-done // Do not leave encoder resource teardown running behind a restart.
 	}()
 	_, _, fps := settings.Dimensions()
 	forward := bridge.stream(fps, track.WriteRTP)

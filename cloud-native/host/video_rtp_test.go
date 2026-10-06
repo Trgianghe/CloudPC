@@ -30,8 +30,30 @@ func Test2K160Settings(t *testing.T) {
 	if w != 2560 || h != 1440 || fps != 160 {
 		t.Fatal(w, h, fps)
 	}
-	s.FPS = 161
+	s.FPS = 501
 	if s.Validate() == nil {
 		t.Fatal("unsupported FPS accepted")
+	}
+}
+
+func TestCustomAndUncappedFPS(t *testing.T) {
+	for _, fps := range []int{1, 75, 240, 500} {
+		s := StreamSettings{Bitrate: 10, FPS: fps, Preset: "1080p120", Codec: "h264"}
+		if err := s.Validate(); err != nil {
+			t.Fatal(err)
+		}
+		_, _, actual := s.Dimensions()
+		if actual != fps {
+			t.Fatal(actual)
+		}
+	}
+	s := StreamSettings{Bitrate: 10, FPS: 0, Uncapped: true, Preset: "2k60", Codec: "h264"}
+	_, _, fps := s.Dimensions()
+	if fps != 500 {
+		t.Fatal("uncapped polling must be bounded and nonzero", fps)
+	}
+	text := strings.Join(videoRTPCommand(Config{Encoder: "nvenc", CaptureMode: "copy"}, s, 12345), " ")
+	if !strings.Contains(text, "framerate=500") || !strings.Contains(text, "-bufsize 20000") || !strings.Contains(text, "-fps_mode passthrough") {
+		t.Fatal(text)
 	}
 }

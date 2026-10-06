@@ -63,6 +63,7 @@ func (w *SignalWriter) Error(err error) {
 
 type Session struct {
 	mu             sync.Mutex
+	videoMu        sync.Mutex
 	pc             *webrtc.PeerConnection
 	input          *InputState
 	ctx            context.Context

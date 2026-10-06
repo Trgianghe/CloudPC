@@ -189,3 +189,17 @@ Trong Cloud Settings → Nút cảm ứng & profile → Chỉnh vị trí nút:
 
 ### Bàn phím ảo và gán hướng tùy ý
 Nút phím chọn được tối đa sáu phím bất kỳ cùng lúc (ví dụ R + T), không giới hạn ở tổ hợp có modifier. Bấm Thêm ở giữa để tạo nút giữa màn hình và tự mở bàn phím ảo; hoặc Chạm để đặt nút rồi chạm vị trí trên màn hình. Bàn phím ảo cho chọn/bỏ chọn nhiều phím, nhập thủ công tên/mã VK và áp dụng. Joystick có bốn nút Lên/Xuống/Trái/Phải, mỗi hướng chọn riêng một phím bất kỳ. Profile lưu nguyên mapping tùy chỉnh. Luồng UI đã kiểm tra trên chế độ demo, còn việc game FC Online nhận input cần thử trong game trên máy khách.
+
+
+## Cloud Settings / Layout Studio (2026-10-06)
+- Bốn nhóm Hình ảnh, Điều khiển, Âm thanh, Phiên; panel fixed không resize video, không dùng backdrop blur trên stream. Thông số cập nhật theo interval.
+- Tùy chỉnh nút mở inspector riêng: chạm vùng trống tạo nút rồi mở bàn phím, kéo nút để di chuyển, chọn nút để sửa. Thêm nút thủ công vẫn tạo ở giữa; không cần chọn chế độ đặt. Xong áp dụng cho phiên, Lưu profile giữ cho lần sau.
+- Danh sách profile chọn riêng rồi Áp dụng. Nhập JSON hỗ trợ profile đơn, danh sách profiles và controls cũ; tối đa 256 KB / 50 profiles / 40 nút mỗi profile. File nhập không tự thay bố cục đang chơi cho đến khi Áp dụng. Xuất JSON chỉ chứa controls, không có mã truy cập host.
+- Thanh kéo mặc định chọn 1–500 FPS; nấc cuối là Không khóa, truyền fps=0 và uncapped=true. Có nút chuyển sang các lựa chọn nhanh. FFmpeg DXGI cần framerate hữu hạn: host polling tối đa 500 FPS; H.264 giữ passthrough, không nhân frame để đạt FPS. Không khóa không có nghĩa PC/decoder sẽ đạt 500 FPS.
+- Giữ màn hình sáng bằng Wake Lock khi trình duyệt hỗ trợ; HUD tùy chọn, âm lượng, fullscreen, độ nhạy và bộ đệm nhận được gom đúng nhóm.
+- Encoder restart được tuần tự hóa: encoder cũ phải kết thúc trước khi mở mới, request đã bị thay thế không chạy capture. Bitrate/resolution vẫn dùng FFmpeg restart, chưa có NVENC reconfigure không gián đoạn; chưa có adaptive bitrate controller như Parsec.
+
+Theo bản Cloud PC Web Streaming specification người dùng gửi: đường media WebRTC trực tiếp, signaling/control không proxy media, input nhị phân không retransmit, release-all khi đóng phiên, no-B-frame/ULL/VBV nhỏ. Capture vẫn copy mode trên máy hybrid hiện tại; zero-copy GPU, KVM provisioning/billing/VM pool của bản đặc tả chưa được triển khai bằng việc sửa UI. Không kết luận gần 0 ms từ RTT hoặc số buffer.
+
+
+Xác minh v6: Go tests/build và 34 kiểm thử JavaScript qua. UI demo xác minh: FPS nấc cuối ∞; chuyển sang lựa chọn nhanh; nhập JSON mở danh sách nhưng chưa áp dụng; Áp dụng thay bố cục; chạm vùng trống trong chỉnh sửa tạo nút và mở bàn phím; màn điện thoại 390x844 có panel 366x804 và studio 366x371. Phiên thật loopback 1440p/60 quan sát 58 FPS, decode 0.7 ms / buffer 0.7 ms; sau đổi mục tiêu 240->120 quan sát 26 FPS, decode 3.4 ms / buffer 1.8 ms. Đây là số tức thời trên chính host (copy/scale CPU, capture cả cửa sổ client), không chứng minh 120 FPS hay click-to-photon. Sự ổn định FPS cao vẫn cần xử lý capture GPU và thử trên máy khách riêng. Trình duyệt IAB không trả sự kiện tải file trong bài thử Xuất JSON; phần nhập/áp dụng JSON và payload được kiểm thử, tải file thực cần kiểm tra trong Chrome. FPS custom cần host mới, cập nhật GitHub Pages không tự cập nhật agent trên một PC khác.

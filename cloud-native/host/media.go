@@ -23,12 +23,18 @@ type StreamSettings struct {
 	PlayoutDelay int    `json:"playoutDelay,omitempty"`
 	Bitrate      int    `json:"bitrate"`
 	FPS          int    `json:"fps,omitempty"`
+	Uncapped     bool   `json:"uncapped,omitempty"`
 	Preset       string `json:"preset"`
 	Codec        string `json:"codec"`
 }
 
 func (s StreamSettings) Dimensions() (int, int, int) {
 	fps := s.FPS
+	if s.Uncapped {
+		// FFmpeg DXGI needs a finite polling rate. Do not manufacture frames;
+		// uncapped presentation uses the highest supported capture request.
+		fps = 500
+	}
 	if fps == 0 {
 		if s.Preset == "1080p120" || s.Preset == "720p120" {
 			fps = 120
@@ -51,8 +57,8 @@ func (s StreamSettings) Validate() error {
 	if s.PlayoutDelay != 0 && s.PlayoutDelay != 30 {
 		return fmt.Errorf("invalid playout delay")
 	}
-	if s.FPS != 0 && s.FPS != 60 && s.FPS != 120 && s.FPS != 144 && s.FPS != 160 {
-		return fmt.Errorf("FPS must be 60, 120, 144 or 160")
+	if s.FPS < 0 || s.FPS > 500 {
+		return fmt.Errorf("FPS must be 0..500")
 	}
 	if s.Bitrate < 5 || s.Bitrate > 100 {
 		return fmt.Errorf("bitrate must be 5..100 Mbps")
@@ -91,7 +97,7 @@ func videoCommand(config Config, s StreamSettings) []string {
 	} else {
 		args = append(args, "-usage", "ultralowlatency", "-quality", "speed", "-rc", "cbr")
 	}
-	args = append(args, "-b:v", fmt.Sprint(bitrate), "-maxrate", fmt.Sprint(bitrate), "-bufsize", fmt.Sprint(bitrate/fps), "-bf", "0", "-g", fmt.Sprint(fps/2), "-r", fmt.Sprint(fps), "-fps_mode", "cfr", "-flush_packets", "1")
+	args = append(args, "-b:v", fmt.Sprint(bitrate), "-maxrate", fmt.Sprint(bitrate), "-bufsize", fmt.Sprint(bitrate/fps), "-bf", "0", "-g", fmt.Sprint(max(1, fps/2)), "-r", fmt.Sprint(fps), "-fps_mode", "cfr", "-flush_packets", "1")
 	// Without global_header, NVENC emits SPS/PPS (VPS for HEVC) on IDRs.
 	if s.Codec == "h264" {
 		args = append(args, "-profile:v", "baseline", "-aud", "1", "-f", "h264")
