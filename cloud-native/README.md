@@ -178,3 +178,10 @@ Checkbox **Ẩn các nút cảm ứng** có hiệu lực ngay và lưu lựa ch�
 Nguồn kiến trúc: [Parsec overview](https://support.parsec.app/hc/en-us/articles/32361354307348-Overview), [NVIDIA FFmpeg SDK](https://docs.nvidia.com/video-technologies/video-codec-sdk/13.1/ffmpeg-with-nvidia-gpu/index.html), [Moonlight latency metrics](https://github.com/moonlight-stream/moonlight-docs/wiki/Frequently-Asked-Questions). Parsec công bố khoảng 7 ms cộng thêm trong thử nghiệm LAN của họ và sử dụng zero-copy GPU cùng bitrate thích nghi; không phải 0 ms.
 
 Phiên WebRTC thật sau bản sửa, cùng PC qua loopback: nhận 2560x1440, yêu cầu 160 FPS, quan sát 78 FPS giải mã / 77 FPS trình bày, decode 1.2 ms, jitter buffer 0.6 ms, mất gói 0.00%. Số tức thời này chưa đo capture-to-photon hoặc chơi game, không đủ kết luận đạt 160 FPS. Host chỉ xử lý input thử click tại chỗ; kiểm tra Gaming Pointer Lock cần máy khách khác.
+
+
+## Combo và di chuyển cảm ứng
+Trong Cloud Settings → Nút cảm ứng & profile → Chỉnh vị trí nút:
+- Nút phím hỗ trợ tổ hợp như Ctrl+C, Shift+W, Alt+Tab hoặc mã VK. Điện thoại có bộ chọn phím và checkbox Ctrl/Shift/Alt. Chọn giữ nút hoặc bấm một lần; phím bổ trợ được nhả theo thứ tự ngược.
+- Kiểu di chuyển có bộ 4 nút hướng và joystick tròn. Joystick dùng WASD hoặc mũi tên, có vùng chết ở tâm và 8 hướng; kéo chéo giữ đồng thời hai phím. Kích thước joystick tối đa 160 px, kéo đổi vị trí khi chỉnh.
+- Lưu profile để giữ combo, vị trí, kích thước và kiểu di chuyển. Thả tay, pointercancel, mất capture, đổi menu hoặc ngắt kết nối sẽ nhả phím. Joystick ánh xạ bàn phím, không gửi analog gamepad; game chỉ nhận tay cầm cần driver và chế độ gamepad riêng.

@@ -18,7 +18,7 @@ def build():
             shutil.copyfile(p,assets/p.name)
     session=OUT/'session'
     session.mkdir(exist_ok=True)
-    player=(ROOT/'cloud-native/index.html').read_text(encoding='utf-8-sig').replace('/assets/native-reference.css','../assets/native-reference.css')
+    player=(ROOT/'cloud-native/index.html').read_text(encoding='utf-8-sig').replace('/assets/','../assets/')
     (session/'index.html').write_text(player,encoding='utf-8')
     for name in ('mouse_controller.js', 'connection.js'):
         shutil.copyfile(ROOT / 'cloud-native' / name, session / name)

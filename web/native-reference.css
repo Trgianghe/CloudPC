@@ -305,3 +305,10 @@
 #settings input,#settings select{accent-color:#9abaff}#settings .stats b,#settings .value{color:#accbff}#settings .dot.live{background:#98dcdf}
 #settings .toggle[aria-checked=true]{background:#6488d0}#edge-handle::after{background:#aecdf3;box-shadow:none;opacity:.45}#edge-handle:hover::after{background:#c9ddff;opacity:.8}
 #settings .disconnect{color:#efb4b5;background:#dc889318}#settings .reboot{color:#e6cc9b}#settings .scroll{scrollbar-color:#adc9ef44 transparent}
+
+/* Joystick moves only its small thumb; no filters on the video layer. */
+.touch-key.touch-joystick{border-radius:50%!important;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#263c5970,#111d3270);overflow:visible;padding:0;}
+.joystick-knob{display:flex;align-items:center;justify-content:center;width:46%;height:46%;border-radius:50%;background:#6089bd66;border:1px solid #c2ddff80;color:#e5f0ff;font-size:10px;pointer-events:none;user-select:none;will-change:transform;}
+.touch-joystick.held .joystick-knob{background:#459df399;border-color:#bae0ff;}
+
+body.editing #settings{z-index:102}body.editing #edge-handle{z-index:103}
