@@ -188,3 +188,20 @@ for(const [id,field] of [['rdp-copy-address','address'],['rdp-copy-username','us
 };
 $('#rdp-download').onclick=()=>downloadRDP(displayedRDP);
 $('#rdp-edit').onclick=()=>{$('#rdp-details').close();openConnection(machines.find(m=>m.id===displayedRDP.id)||displayedRDP);};
+
+$('#import-rdp-button').onclick=()=>$('#import-rdp-config').click();
+$('#import-rdp-config').onchange=async e=>{
+  const file=e.target.files[0];if(!file)return;
+  $('#form-error').textContent='';
+  try{
+    if(file.size>65536)throw new Error('File quá lớn. Giới hạn 64 KB.');
+    const parsed=CloudRDP.parse(CloudRDP.decode(await file.arrayBuffer()),file.name);
+    if(!$('#connection-dialog').open)return;
+    const form=$('#connection-form');setMode('rdp');
+    editingMachine=machines.find(m=>m.mode==='rdp'&&m.host===parsed.host&&Number(m.port)===parsed.port&&m.username===parsed.username)?.id||null;
+    for(const field of ['name','host','port','username'])form.elements[field].value=parsed[field];
+    form.dataset.nativeRoom='';form.dataset.nativeSignaling='';
+    toast('Đã điền thông tin RDP. Bấm Lưu máy tính để dùng lại.');
+  }catch(error){$('#form-error').textContent=error.message;}
+  finally{e.target.value='';}
+};

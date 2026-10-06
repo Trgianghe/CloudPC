@@ -144,3 +144,5 @@ Checkbox **Ẩn các nút cảm ứng** có hiệu lực ngay và lưu lựa ch�
 ### Remote Desktop đã lưu
 
 Trên thẻ PC RDP, bấm **Thông tin kết nối** để hiện IP/hostname, cổng và tài khoản, sao chép hoặc tải `.rdp`. Chỉ dùng **Sửa thông tin** khi cần đổi cấu hình. Trong tab Remote Desktop có danh sách PC RDP đã lưu. Có thể nhập JSON dạng `{"mode":"rdp","name":"Remote PC","host":"192.168.1.20","port":3389,"username":"Player"}`; mật khẩu không được nhập/lưu qua config này. File `.rdp` điền địa chỉ và tài khoản; mật khẩu do ứng dụng Remote Desktop quản lý. WebRTC host không tự cấp tài khoản Windows hoặc bật RDP.
+
+Trong tab Remote Desktop, nút **Nhập file .rdp / JSON** đọc file ngay trên thiết bị, tự điền IP/cổng/tài khoản; hỗ trợ file Windows UTF-16 và JSON. Kiểm tra rồi bấm **Lưu máy tính**. File thiếu tài khoản thì điền tài khoản Windows đã được cấp; mật khẩu vẫn nhập trong ứng dụng Remote Desktop.
