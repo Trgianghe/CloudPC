@@ -88,7 +88,7 @@ func videoCommand(config Config, s StreamSettings) []string {
 	if config.CaptureMode == "gpu" {
 		args = append(args, "-vf", fmt.Sprintf("scale_d3d11=width=%d:height=%d:format=nv12", w, h))
 	} else {
-		args = append(args, "-vf", fmt.Sprintf("hwdownload,format=bgra,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,format=yuv420p", w, h, w, h))
+		args = append(args, "-vf", fmt.Sprintf("hwdownload,format=bgra,scale=%d:%d:flags=fast_bilinear:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,format=yuv420p", w, h, w, h))
 	}
 	codec := map[string]string{"h264": "h264", "hevc": "hevc", "av1": "av1"}[s.Codec] + "_" + config.Encoder
 	args = append(args, "-an", "-c:v", codec)

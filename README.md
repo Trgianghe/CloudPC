@@ -191,3 +191,12 @@ Sửa máy tính giữ nguyên ID hồ sơ kể cả đổi WebRTC/RDP/Moonlight
 - Trạng thái được làm mới mỗi 5 giây khi trang đang mở. Mất mạng không bị coi là hết hạn: hiển thị máy chưa phản hồi.
 - Thông tin RDP gồm địa chỉ/cổng/tài khoản Windows thật, không tiết lộ mật khẩu Windows. Moonlight vẫn cần Sunshine và PIN ghép đôi; Parsec vẫn cần tài khoản Parsec được host cấp quyền. Phát PC không tạo tài khoản Windows hay tự cấp quyền cho ứng dụng khác.
 - Host phải cập nhật mã nguồn và chạy lại open_web.bat để có API /api/broadcast/session.
+
+### Input và tải kết nối (2026-10-07)
+
+- Nhấn/nhả gửi ngay snapshot nhị phân có số thứ tự. Host loại trạng thái cũ đến lệch thứ tự; heartbeat 20 ms sửa trạng thái mất gói. Không nhả W khi click bắn. Chuột chuyển động dùng kênh riêng, không xếp sau hàng đợi video.
+- Cloud Setting → Điều khiển → Mở bàn phím & chuột ảo có chuột trái/phải/giữa và cuộn. Chọn nút cảm ứng cũng có lựa chọn chuột trong bàn phím chọn phím. Đóng, hủy chạm hoặc mất focus sẽ nhả input.
+- Cloud Setting → Phiên hiển thị input round trip và thời gian xử lý host riêng với decode/buffer. Những số này không phải click-to-photon. Đặt 120/160 FPS không bảo đảm FPS thực nhận.
+- Copy capture dùng fast bilinear giảm chi phí scale CPU; vẫn không phải zero-copy. GPU capture chỉ bật khi driver/FFmpeg tương thích. Không cam kết 0 ms hay 2K160 trên mọi máy/mạng.
+- Tải RDP dùng attachment trực tiếp từ host với ticket chỉ dành cho file, một lần, 120 giây; không chứa mật khẩu Windows. Host cũ dùng Blob UTF-16 dự phòng. Xuất file không đòi RDP đã bật.
+- Moonlight có quay lại bảng chọn ứng dụng, gồm cả Esc/đóng. Điện thoại chạy Moonlight; host PC cần Sunshine hoặc host giao thức tương thích và PIN lần đầu. WebRTC không thay thế giao thức này.

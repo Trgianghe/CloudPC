@@ -42,7 +42,7 @@ class Broadcast:
         self.state='off';self.username='';self.password='';self.digest=b''
         self.active=0.;self.paused=0.;self.changed=self.clock();self.started=0.;self.connections=0
         self.generation=0;self.tickets={};self.clients=set();self.joined=set();self.attempts={};self.last=None
-        self.session_id='';self.grants={}
+        self.session_id='';self.grants={};self.downloads={}
 
     def configure(self,value):
         if self.state!='off':raise ValueError('Kết thúc phiên trước khi đổi thông tin truy cập.')
@@ -63,7 +63,7 @@ class Broadcast:
         return (self.active+(delta if self.state=='running' else 0),self.paused+(delta if self.state=='paused' else 0))
 
     async def revoke(self):
-        self.generation+=1;self.tickets.clear()
+        self.generation+=1;self.tickets.clear();self.downloads.clear()
         callbacks=list(self.clients)
         await asyncio.gather(*(asyncio.wait_for(close(),3) for close in callbacks),return_exceptions=True)
         self.clients.clear();self.joined.clear()
@@ -138,6 +138,17 @@ class Broadcast:
             result['ticket']=ticket
         return result
 
+    def rdp_download(self,info):
+        now=self.clock();self.downloads={key:value for key,value in self.downloads.items() if value[0]>now}
+        if len(self.downloads)>=256:self.downloads.pop(next(iter(self.downloads)))
+        token=secrets.token_urlsafe(32);self.downloads[token]=(now+120,self.session_id,dict(info))
+        return '/api/broadcast/rdp/'+token
+
+    def take_rdp_download(self,token):
+        expiry,session,info=self.downloads.pop(token,(0,'',{}))
+        if expiry<=self.clock() or session!=self.session_id or self.state=='off':raise PermissionError('Link tải hết hạn. Mở lại thông tin PC để tạo link mới.')
+        return info
+
 
 def register_broadcast(app,root,manager):
     action_lock=asyncio.Lock()
@@ -196,7 +207,7 @@ def register_broadcast(app,root,manager):
             details=await connection_info(request)
             if ticket not in manager.tickets or manager.state!='running':raise PermissionError('Phiên đã thay đổi. Đăng nhập lại.')
             access=manager.issue_access()
-            return web.json_response({**details,'ticket':ticket,'access':access,'sessionId':manager.session_id,'state':manager.state},headers=headers)
+            return web.json_response({**details,'ticket':ticket,'access':access,'sessionId':manager.session_id,'state':manager.state,'rdpDownload':manager.rdp_download(details['apps']['rdp'])},headers=headers)
         except PermissionError as error:return web.json_response({'error':str(error)},status=401,headers=headers)
         except (ValueError,TypeError,OSError):return web.json_response({'error':'Không đăng nhập được. Kiểm tra host đã bật.'},status=400,headers=headers)
 
@@ -207,6 +218,11 @@ def register_broadcast(app,root,manager):
             data=await request.json()
             if not isinstance(data,dict) or not isinstance(data.get('access'),str) or len(data['access'])>128:raise PermissionError('Phiên đã hết hạn.')
             result=manager.guest_state(data['access'],data.get('action')=='connect')
+            if manager.state!='off':
+                info=await asyncio.to_thread(collect_info)
+                # Re-check after awaiting metadata: stop/new-session must not issue a stale download grant.
+                fresh=manager.guest_state(data['access']);result['state']=fresh['state']
+                if fresh['state']!='off':result['rdpDownload']=manager.rdp_download(info)
             if 'ticket' in result:
                 cfg=json.loads((root/'cloud-native/host.config.json').read_text(encoding='utf-8-sig'));result['room']=cfg['room']
             return web.json_response(result,headers=headers)
@@ -216,3 +232,12 @@ def register_broadcast(app,root,manager):
     app.router.add_post('/api/broadcast',owner);app.router.add_options('/api/broadcast',owner)
     app.router.add_post('/api/broadcast/login',guest);app.router.add_options('/api/broadcast/login',guest)
     app.router.add_post('/api/broadcast/session',session);app.router.add_options('/api/broadcast/session',session)
+    async def rdp_file(request):
+        try:info=manager.take_rdp_download(request.match_info['ticket'])
+        except PermissionError as error:raise web.HTTPGone(text=str(error),headers={'Cache-Control':'no-store'})
+        host=str(info['host']);host='['+host+']' if ':' in host and not host.startswith('[') else host
+        username=str(info.get('username',''))
+        if any(c in host+username for c in '\r\n'):raise web.HTTPBadRequest()
+        text='full address:s:'+host+':'+str(int(info.get('port',3389)))+'\r\nusername:s:'+username+'\r\nprompt for credentials:i:1\r\nauthentication level:i:2\r\nscreen mode id:i:2\r\nredirectclipboard:i:1\r\n'
+        return web.Response(body=text.encode('utf-16'),headers={'Content-Type':'application/x-rdp','Content-Disposition':'attachment; filename="pc-cloud.rdp"','Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'})
+    app.router.add_get('/api/broadcast/rdp/{ticket}',rdp_file)

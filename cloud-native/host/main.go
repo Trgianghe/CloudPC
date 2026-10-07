@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/pion/webrtc/v4"
 	"io"
 	"log"
+	"math"
 	"os"
 	"os/signal"
 	"strings"
@@ -210,11 +212,20 @@ func newSession(config Config, writer *SignalWriter, offer Message, ice []webrtc
 			if message.IsString {
 				return
 			}
+			started := time.Now()
 			if err := s.input.Receive(message.Data); err != nil {
 				return
 			}
 			if len(message.Data) == 9 && message.Data[0] == 7 {
 				_ = channel.Send(message.Data)
+			}
+			if len(message.Data) == 58 && message.Data[0] == 8 {
+				ack := make([]byte, 17)
+				ack[0] = 9
+				copy(ack[1:5], message.Data[1:5])
+				copy(ack[5:13], message.Data[50:58])
+				binary.LittleEndian.PutUint32(ack[13:], math.Float32bits(float32(time.Since(started).Seconds()*1000)))
+				_ = channel.Send(ack)
 			}
 		})
 		channel.OnClose(s.input.Release)
@@ -284,7 +295,7 @@ func runSignaling(ctx context.Context, config Config, sink *WindowsSink) error {
 	go func() { <-ctx.Done(); connection.Close() }()
 	codecs := availableCodecs(config)
 	capabilities := func() {
-		_ = writer.Send(map[string]any{"type": "capabilities", "capabilities": map[string]any{"codecs": codecs, "gamepad": sink.gamepad != nil, "allowReboot": config.AllowReboot && !config.ViewOnly, "audio": config.Audio, "captureMode": config.CaptureMode}})
+		_ = writer.Send(map[string]any{"type": "capabilities", "capabilities": map[string]any{"codecs": codecs, "inputAck": true, "gamepad": sink.gamepad != nil, "allowReboot": config.AllowReboot && !config.ViewOnly, "audio": config.Audio, "captureMode": config.CaptureMode}})
 	}
 	for {
 		var message Message

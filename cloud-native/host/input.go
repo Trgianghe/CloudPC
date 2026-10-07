@@ -29,6 +29,8 @@ type InputState struct {
 	snapshot     uint32
 	haveSnapshot bool
 	viewOnly     bool
+	lastPad      PadReport
+	havePad      bool
 }
 
 func NewInput(sink InputSink, viewOnly bool) *InputState {
@@ -74,6 +76,8 @@ func (s *InputState) releaseLocked() {
 	}
 	_ = s.mouseLocked(0)
 	_ = s.sink.Pad(PadReport{})
+	s.lastPad = PadReport{}
+	s.havePad = false
 }
 func (s *InputState) Release() { s.mu.Lock(); defer s.mu.Unlock(); s.releaseLocked() }
 func (s *InputState) Receive(b []byte) error {
@@ -82,7 +86,7 @@ func (s *InputState) Receive(b []byte) error {
 	if len(b) == 0 {
 		return errors.New("empty packet")
 	}
-	expected := map[byte]int{1: 5, 2: 2, 3: 4, 4: 13, 5: 50, 6: 1, 7: 9}
+	expected := map[byte]int{1: 5, 2: 2, 3: 4, 4: 13, 5: 50, 6: 1, 7: 9, 8: 58}
 	size, ok := expected[b[0]]
 	if !ok || len(b) != size {
 		return errors.New("wrong binary packet size")
@@ -106,8 +110,13 @@ func (s *InputState) Receive(b []byte) error {
 		}
 		return s.keyLocked(binary.LittleEndian.Uint16(b[2:]), b[1] == 1)
 	case 4:
-		return s.sink.Pad(padFrom(b[1:]))
-	case 5:
+		report := padFrom(b[1:])
+		if err := s.sink.Pad(report); err != nil {
+			return err
+		}
+		s.lastPad, s.havePad = report, true
+		return nil
+	case 5, 8:
 		seq := binary.LittleEndian.Uint32(b[1:])
 		if s.haveSnapshot && int32(seq-s.snapshot) <= 0 {
 			return nil
@@ -123,7 +132,14 @@ func (s *InputState) Receive(b []byte) error {
 				return err
 			}
 		}
-		return s.sink.Pad(padFrom(b[38:]))
+		report := padFrom(b[38:50])
+		if !s.havePad || report != s.lastPad {
+			if err := s.sink.Pad(report); err != nil {
+				return err
+			}
+			s.lastPad, s.havePad = report, true
+		}
+		return nil
 	}
 	return nil
 }

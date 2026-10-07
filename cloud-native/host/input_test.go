@@ -103,6 +103,49 @@ func TestSelfHostAndTimeout(t *testing.T) {
 		t.Fatal("watchdog did not release")
 	}
 }
+
+func TestImmediateSnapshotRejectsReorderedPressAndRepairsLoss(t *testing.T) {
+	sink := &fakeSink{}
+	state := NewInput(sink, false)
+	packet := func(seq uint32, down bool, mouse byte) []byte {
+		b := make([]byte, 58)
+		b[0] = 8
+		binary.LittleEndian.PutUint32(b[1:], seq)
+		b[5] = mouse
+		if down {
+			b[6+87/8] |= 1 << (87 % 8)
+		}
+		return b
+	}
+	// Press and release are full state packets, not competing unsequenced edges.
+	if err := state.Receive(packet(1, true, 1)); err != nil {
+		t.Fatal(err)
+	}
+	if !sink.keys[87] || sink.buttons != 1 {
+		t.Fatal("press did not apply immediately")
+	}
+	if err := state.Receive(packet(3, false, 0)); err != nil {
+		t.Fatal(err)
+	}
+	_ = state.Receive(packet(2, true, 1))
+	if sink.keys[87] || sink.buttons != 0 {
+		t.Fatal("delayed press resurrected a released key/button")
+	}
+	// Lost release is repaired by the very next heartbeat, with no retransmit wait.
+	_ = state.Receive(packet(4, true, 1))
+	_ = state.Receive(packet(6, false, 0))
+	if sink.keys[87] || sink.buttons != 0 {
+		t.Fatal("heartbeat did not repair loss")
+	}
+	// Sequence wraparound is also ordered correctly.
+	state.haveSnapshot = false
+	_ = state.Receive(packet(0xfffffffe, true, 1))
+	_ = state.Receive(packet(1, false, 0))
+	_ = state.Receive(packet(0xffffffff, true, 1))
+	if sink.keys[87] || sink.buttons != 0 {
+		t.Fatal("sequence wraparound allowed stale state")
+	}
+}
 func TestAnnexBReaderPreservesNALs(t *testing.T) {
 	scan := bufio.NewScanner(strings.NewReader("\x00\x00\x00\x01\x09\xf0\x00\x00\x01\x67\x01\x02\x00\x00\x00\x01\x65\x55"))
 	scan.Split(splitAnnexB)

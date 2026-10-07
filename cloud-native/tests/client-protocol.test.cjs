@@ -14,10 +14,10 @@ test('input gate blocks editing, menu, hidden page and same-host test; essential
   context.document.hidden=true;context.sendBinary(Uint8Array.of(1,0,0,0,0));assert.equal(sent.length,0);context.sendBinary(Uint8Array.of(6),true);assert.deepEqual(sent,[[6]]);
 });
 test('two touch controls bound to one key hold it until the last source releases',()=>{
-  const sent=[],keys=new Set(),context=vm.createContext({keySources:new Map(),keys,sendBinary:b=>sent.push([...b]),Uint8Array,DataView});
+  const sent=[],keys=new Set(),context=vm.createContext({keySources:new Map(),keys,snapshot:()=>sent.push([...keys]),Uint8Array,DataView});
   vm.runInContext(functionSource('keyPacket')+'\n'+functionSource('holdKey'),context);
   context.holdKey('touch:a',87,true);context.holdKey('touch:b',87,true);
   context.holdKey('touch:a',87,false);assert.equal(keys.has(87),true);
   context.holdKey('touch:b',87,false);assert.equal(keys.has(87),false);
-  assert.deepEqual(sent,[[3,1,87,0],[3,0,87,0]]);
+  assert.deepEqual(sent,[[87],[]]);
 });

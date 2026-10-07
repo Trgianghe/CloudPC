@@ -75,6 +75,14 @@ function readMachine() {
 function storeMachine(machine) { const index = machines.findIndex(m => m.id === machine.id); if (index >= 0) machines[index] = machine; else machines.push(machine); editingMachine = machine.id; saveStore('pccloud.machines', machines); renderMachines(); }
 function download(name, content, type) { const url = URL.createObjectURL(new Blob([content],{type})); const a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
 function downloadRDP(machine) { download('pc-cloud.rdp',CloudRDP.file(machine),'application/x-rdp'); toast('Đã tải file RDP. Mở bằng ứng dụng Remote Desktop.'); }
+// Native anchor clicks keep the download inside the user's activation on mobile.
+function prepareRDPDownload(anchor,machine){
+  const bytes=CloudRDP.file(machine),signature=CloudRDP.address(machine)+'\n'+(machine.username||'');
+  if(anchor.dataset.rdpSignature===signature&&anchor.href.startsWith('blob:'))return;
+  if(anchor.dataset.rdpURL)URL.revokeObjectURL(anchor.dataset.rdpURL);
+  const url=URL.createObjectURL(new Blob([bytes],{type:'application/x-rdp'}));
+  anchor.href=url;anchor.download='pc-cloud.rdp';anchor.dataset.rdpURL=url;anchor.dataset.rdpSignature=signature;
+}
 function describeKeys(c) { if(c.action==='joystick')return 'Joystick · '+c.keys.map(k=>keyNames[k]||k).join(' / '); return c.action === 'key' ? c.keys.map(k => keyNames[k] || `VK ${k}`).join(' + ') : {'left':'Chuột trái','right':'Chuột phải','middle':'Chuột giữa'}[c.action]; }
 function renderControls() { $('#control-list').innerHTML = controls.map(c => `<article class="control-item"><span class="key-badge">${escapeHTML(c.label)}</span><div><strong>${escapeHTML(describeKeys(c))}</strong><small>${c.hold ? 'Giữ để thao tác' : 'Chạm để nhấn'}</small></div><div class="item-actions"><button class="icon-button" data-edit-control="${escapeHTML(c.id)}" title="Sửa nút">✎</button><button class="icon-button" data-remove-control="${escapeHTML(c.id)}" title="Xóa nút">×</button></div></article>`).join(''); }
 let recordedKeys = [];
@@ -202,13 +210,14 @@ function showRDPDetails(machine){
   $('#rdp-address').textContent=rdpAddress(displayedRDP);
   $('#rdp-username').textContent=displayedRDP.username||'Chưa lưu tài khoản Windows';
   $('#rdp-copy-username').disabled=!displayedRDP.username;
+  prepareRDPDownload($('#rdp-download'),displayedRDP);
   if(!$('#rdp-details').open)$('#rdp-details').showModal();
 }
 for(const [id,field] of [['rdp-copy-address','address'],['rdp-copy-username','username']])$('#'+id).onclick=async()=>{
   const value=field==='address'?rdpAddress(displayedRDP):displayedRDP.username;
   try{await navigator.clipboard.writeText(value);toast('Đã sao chép.');}catch{toast('Không sao chép tự động được. Chọn thông tin trên bảng để sao chép.');}
 };
-$('#rdp-download').onclick=()=>downloadRDP(displayedRDP);
+$('#rdp-download').onclick=()=>toast('Đang tải file .rdp. Mở file bằng Remote Desktop.');
 $('#rdp-edit').onclick=()=>{$('#rdp-details').close();openConnection(machines.find(m=>m.id===displayedRDP.id)||displayedRDP);};
 
 

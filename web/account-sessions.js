@@ -1,6 +1,6 @@
 'use strict';
 (() => {
- let selected=null,playing=null,busy=false,loginOrigin='',loginId=null;
+ let selected=null,playing=null,busy=false,loginOrigin='',loginId=null,detailReturn=null;
  const labels={running:'PC đang phát · sẵn sàng chơi',paused:'PC đã tạm dừng · đợi chủ máy tiếp tục',off:'Máy này đã tắt · phiên hết hạn',expired:'Hết hạn · có thể xóa hồ sơ',offline:'Máy chưa phản hồi',unknown:'Chưa kiểm tra trạng thái'};
  const isEnded=m=>['off','expired'].includes(m.broadcastState);
  const api=async(m,action='status')=>{
@@ -9,27 +9,35 @@
  };
  function remember(m){const index=machines.findIndex(x=>x.id===m.id);if(index<0)return;machines[index]=m;saveStore('pccloud.machines',machines);renderMachines();}
  function appsFor(m){if(m.apps)return m.apps;const apps={};if(m.mode==='webrtc')apps.webrtc={label:'PC Cloud'};if(m.mode==='rdp')apps.rdp={label:'Remote Desktop',host:m.host,port:m.port,username:m.username,message:'Thông tin hồ sơ RDP đã lưu. Dùng mật khẩu Windows trong ứng dụng.'};if(m.mode==='moonlight')apps.moonlight={label:'Moonlight / Sunshine',host:m.host,message:'Ghép đôi bằng PIN trên Sunshine.'};if(m.mode==='parsec')apps.parsec={label:'Parsec',url:'https://web.parsec.app/',message:'Dùng tài khoản Parsec được cấp quyền.'};if(m.mode==='external')apps.external={label:'Web / App khác',url:m.external};return apps;}
- function fields(m,app){const value=appsFor(m)[app]||{};if(app==='webrtc')return [['Địa chỉ PC',m.url],['Tài khoản Phát PC',m.broadcastUsername||m.name]];if(app==='moonlight')return [['Địa chỉ Sunshine',value.host]];if(app==='rdp')return [['Địa chỉ',value.host],['Cổng',String(value.port||3389)],['Tài khoản Windows',value.username]];return [['Trang ứng dụng',value.url]];}
+ function fields(m,app){const value=appsFor(m)[app]||{};if(app==='webrtc')return [['Địa chỉ PC',m.url],['Tài khoản Phát PC',m.broadcastUsername||m.name]];if(app==='moonlight')return [['IP nhập vào Moonlight',value.host]];if(app==='rdp')return [['Địa chỉ',value.host],['Cổng',String(value.port||3389)],['Tài khoản Windows',value.username]];return [['Trang ứng dụng',value.url]];}
  async function copy(value){try{await navigator.clipboard.writeText(value||'');toast('Đã sao chép.');}catch{toast('Không sao chép tự động được. Chọn phần thông tin để copy.');}}
  function paint(){
   if(!selected)return;const m=machines.find(x=>x.id===selected.id)||selected;selected=m;const app=$('#guest-app').value,value=appsFor(m)[app]||{};
   $('#guest-name').textContent=m.name;$('#guest-state').textContent=playing===m.id?'Đang chơi · kết nối web':labels[m.broadcastState||'unknown'];$('#guest-delete').hidden=!isEnded(m);
   $('#guest-message').textContent=value.message||(app==='webrtc'?'Hồ sơ đã lưu. Bấm kết nối để vào PC; không cần nhập lại thông tin.':'');
+  if(app==='moonlight')$('#guest-message').textContent='Trên điện thoại mở Moonlight rồi thêm IP phía trên. Đã ghép đôi thì vào PC ngay; thiết bị mới cần chủ PC xác nhận PIN một lần.';
   if(m.broadcastState==='paused')$('#guest-message').textContent='PC đã tạm dừng. Đợi chủ máy tiếp tục, sau đó bấm kết nối lại.';
   if(isEnded(m))$('#guest-message').textContent='Quyền truy cập phiên này đã hết hạn. Chủ máy bật lại sẽ tạo phiên mới; dùng tài khoản mới để thêm PC.';
   const info=$('#guest-info');info.replaceChildren();for(const [title,text] of fields(m,app)){if(!text)continue;const row=document.createElement('div'),label=document.createElement('small'),line=document.createElement('div'),code=document.createElement('code'),button=document.createElement('button');label.textContent=title;line.className='copy-value';code.textContent=text;button.type='button';button.className='button secondary';button.textContent='Copy';button.setAttribute('aria-label','Sao chép '+title);button.onclick=()=>copy(text);line.append(code,button);row.append(label,line);info.append(row);}
   $('#guest-connect').textContent={webrtc:'Kết nối trên web ↗',rdp:'Tải file .rdp ↓',moonlight:'Hướng dẫn ghép đôi ↗',parsec:'Mở Parsec ↗',external:'Mở ứng dụng ↗'}[app];
-  $('#guest-connect').disabled=m.authType==='broadcast'&&(m.broadcastState!=='running'||(app==='rdp'&&(value.supported===false||value.enabled===false)));
+  // Export is not a remote-control action; unsupported/offline Windows can still export its configuration.
+  $('#guest-connect').hidden=app==='rdp';$('#guest-rdp-download').hidden=app!=='rdp';
+  if(app==='rdp'){
+   const link=$('#guest-rdp-download');
+   if(m.rdpDownload?.startsWith('/api/broadcast/rdp/')){link.href=m.url+m.rdpDownload;link.download='pc-cloud.rdp';link.referrerPolicy='no-referrer';}
+   else prepareRDPDownload(link,{host:value.host,port:value.port,username:value.username});
+  }
+  $('#guest-connect').disabled=m.authType==='broadcast'&&m.broadcastState!=='running';
  }
  async function refresh(m){
   if(!m.access||isEnded(m))return;
-  try{const data=await api(m);m={...m,broadcastState:data.state};}
+  try{const data=await api(m);m={...m,broadcastState:data.state,rdpDownload:data.rdpDownload};}
   catch(error){m={...m,broadcastState:error.state==='expired'?'expired':'offline'};}
   remember(m);if(selected?.id===m.id)paint();
   if(playing===m.id&&m.broadcastState!=='running'){playing=null;await disconnect();toast(labels[m.broadcastState]);}
  }
  function show(m){
-  selected=m;const choices=appsFor(m),select=$('#guest-app');select.replaceChildren();for(const [id,value] of Object.entries(choices)){const option=document.createElement('option');option.value=id;option.textContent=value.label;select.append(option);}if(m.lastApp&&choices[m.lastApp])select.value=m.lastApp;paint();$('#guest-details').showModal();refresh(m);
+  selected=m;const choices=appsFor(m),select=$('#guest-app');select.replaceChildren();for(const [id,value] of Object.entries(choices)){const option=document.createElement('option');option.value=id;option.textContent=id==='moonlight'?'Moonlight':value.label;select.append(option);}if(m.lastApp&&choices[m.lastApp])select.value=m.lastApp;paint();if(!$('#guest-details').open)$('#guest-details').showModal();refresh(m);
  }
  function openLogin(m=null){
   rdpScanGeneration++;loginId=m?.id||null;const f=$('#connection-form');f.reset();f.classList.add('account-only');f.dataset.editId=loginId||'';f.elements.name.value='PC đang phát';f.elements.broadcastUsername.value=m?.broadcastUsername||'';f.elements.cloudAuth.value='broadcast';setMode('webrtc');
@@ -46,7 +54,7 @@
    if(generation!==rdpScanGeneration||!$('#connection-dialog').open)return;
    if(!data.access||!data.apps)throw Error('PC host cần cập nhật bản mới và khởi động lại open_web.bat.');
    const existing=machines.find(m=>m.authType==='broadcast'&&m.url===machine.url&&m.sessionId===data.sessionId);
-   const saved={...machine,id:loginId||existing?.id||uid(),name:data.name,mode:'webrtc',authType:'broadcast',access:data.access,sessionId:data.sessionId,apps:data.apps,broadcastState:data.state,nativeRoom:data.room,nativeSignaling:machine.url.replace(/^http/,'ws')+'/signal',width:1920,fps:120,bitrate:20};
+   const saved={...machine,id:loginId||existing?.id||uid(),name:data.name,mode:'webrtc',authType:'broadcast',access:data.access,sessionId:data.sessionId,apps:data.apps,rdpDownload:data.rdpDownload,broadcastState:data.state,nativeRoom:data.room,nativeSignaling:machine.url.replace(/^http/,'ws')+'/signal',width:1920,fps:120,bitrate:20};
    storeMachine(saved);saveStore('pccloud.join-origin',machine.url);$('#connection-dialog').close();show(saved);
   }catch(error){if(generation===rdpScanGeneration&&$('#connection-dialog').open)$('#form-error').textContent=error.message;}
   finally{if(generation===rdpScanGeneration)button.disabled=false;}
@@ -55,6 +63,18 @@
  $('#guest-app').onchange=()=>{if(selected){selected.lastApp=$('#guest-app').value;remember(selected);}paint();};
  $('#guest-copy').onclick=()=>selected&&copy(fields(selected,$('#guest-app').value).filter(([,v])=>v).map(([k,v])=>k+': '+v).join('\n'));
  $('#guest-delete').onclick=()=>{if(!selected||!isEnded(selected))return;machines=machines.filter(m=>m.id!==selected.id);saveStore('pccloud.machines',machines);renderMachines();$('#guest-details').close();selected=null;};
+ $('#guest-back').onclick=()=>{$('#guest-details').close();showView('machines');};
+ $('#guest-rdp-download').onclick=()=>toast('Đang tải file .rdp. Mở file bằng Remote Desktop / Windows App.');
+ function backFrom(dialog){
+  if(detailReturn?.dialog===dialog){const context=detailReturn;detailReturn=null;show(machines.find(m=>m.id===context.machine.id)||context.machine);return;}
+  const known=dialog==='moonlight-details'?moonlightDetails:displayedRDP;
+  const machine=machines.find(m=>m.id===known?.id);
+  if(machine)show(machine);else showView('machines');
+ }
+ for(const [dialog,button] of [['moonlight-details','moonlight-back'],['rdp-details','rdp-back']]){
+  $('#'+button).onclick=()=>{if(detailReturn?.dialog===dialog)$('#'+dialog).close();else{$('#'+dialog).close();backFrom(dialog);}};
+  $('#'+dialog).addEventListener('close',()=>{if(detailReturn?.dialog===dialog)backFrom(dialog);});
+ }
  $('#guest-connect').onclick=async()=>{
   if(!selected)return;const m=selected,app=$('#guest-app').value;$('#guest-connect').disabled=true;
   try{
@@ -65,7 +85,7 @@
     if(!ticket){$('#guest-details').close();openLogin(m);return;}
     $('#guest-details').close();await connect(m,ticket);playing=m.id;renderMachines();
    }else if(app==='rdp')downloadRDP({name:m.name,host:value.host,port:value.port,username:value.username});
-   else if(app==='moonlight'){$('#guest-details').close();showMoonlightDetails({id:m.id,name:m.name,host:value.host});$('#moonlight-save').hidden=true;}
+   else if(app==='moonlight'){detailReturn={dialog:'moonlight-details',machine:m};$('#guest-details').close();showMoonlightDetails({id:m.id,name:m.name,host:value.host});$('#moonlight-save').hidden=true;}
    else window.open(safeURL(value.url).href,'_blank','noopener,noreferrer');
   }catch(error){$('#guest-message').textContent=error.message;toast(error.message);}finally{paint();}
  };

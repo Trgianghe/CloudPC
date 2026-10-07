@@ -19,7 +19,7 @@ function mountOriginalSettings(engineFrame, container) {
     controller=new CloudMouseController(video,{
       enabled:()=>!!bridge?.allowed()&&!menuOpen(),geometry:()=>bridge?.geometry(),
       clickOnly:()=>!!bridge?.selfHost()&&!!bridge?.local(),
-      onButtonsChanged:mask=>bridge?.buttons(mask),
+      sendButtonPackets:false,onButtonsChanged:mask=>bridge?.buttons(mask),
       onModeChange:mode=>{lock.checked=mode==='gaming';video.style.setProperty('cursor',mode==='gaming'?'none':'default','important');}
     });
     observer=new win.MutationObserver(syncMenu);
