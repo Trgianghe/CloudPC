@@ -1,7 +1,7 @@
 'use strict';
 let moonlightDetails=null;
 function showMoonlightDetails(machine){
- try{moonlightDetails=CloudMoonlight.validate(machine);}catch(error){toast(error.message);return;}
+ try{moonlightDetails={...CloudMoonlight.validate(machine),id:machine.id};}catch(error){toast(error.message);return;}
  $('#moonlight-pc-name').textContent=moonlightDetails.name;
  $('#moonlight-address').textContent=moonlightDetails.host;
  if(!$('#moonlight-details').open)$('#moonlight-details').showModal();
@@ -12,7 +12,7 @@ async function shareMoonlight(machine){
 }
 $('#moonlight-preview').onclick=()=>{try{showMoonlightDetails(readMachine());$('#form-error').textContent='';}catch(error){$('#form-error').textContent=error.message;}};
 $('#moonlight-copy').onclick=async()=>{try{await navigator.clipboard.writeText(moonlightDetails.host);toast('Đã sao chép IP cho Moonlight.');}catch{toast('Chọn địa chỉ trên bảng để sao chép.');}};
-$('#moonlight-save').onclick=()=>{const existing=machines.find(m=>m.mode==='moonlight'&&m.host===moonlightDetails.host&&m.name===moonlightDetails.name);storeMachine({...moonlightDetails,id:existing?.id||uid()});toast('Đã lưu PC Moonlight trên thiết bị này.');};
+$('#moonlight-save').onclick=()=>{const existing=machines.find(m=>m.mode==='moonlight'&&m.host===moonlightDetails.host&&m.name===moonlightDetails.name);storeMachine({...moonlightDetails,id:machines.some(m=>m.id===moonlightDetails.id)?moonlightDetails.id:existing?.id||moonlightDetails.id||uid()});toast('Đã lưu PC Moonlight trên thiết bị này.');};
 $('#moonlight-share').onclick=()=>shareMoonlight(moonlightDetails);
 $('#moonlight-export').onclick=()=>download('pccloud-moonlight.txt',CloudMoonlight.text(moonlightDetails),'text/plain;charset=utf-8');
 $('#moonlight-scan').onclick=async()=>{
@@ -26,7 +26,7 @@ $('#moonlight-scan').onclick=async()=>{
   const info=await response.json(),machine=CloudMoonlight.validate(info);
   if(generation!==rdpScanGeneration||!$('#connection-dialog').open||activeMode!=='moonlight')return;
   const form=$('#connection-form');form.elements.name.value=machine.name;form.elements.moonlightHost.value=machine.host;
-  editingMachine=machines.find(m=>m.mode==='moonlight'&&m.host===machine.host)?.id||null;
+  adoptConnectionMatch(machines.find(m=>m.mode==='moonlight'&&m.host===machine.host));
   status.textContent='Đã lấy địa chỉ PC. Cần cài/chạy Sunshine và ghép đôi với Moonlight trên điện thoại. Quét này chưa kiểm tra Sunshine hay kết nối chơi game.';
   $('#form-error').textContent='';
  }catch{

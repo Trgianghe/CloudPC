@@ -174,3 +174,10 @@ Trong Cloud Setting → Điều khiển → Tùy chỉnh nút, chọn Phím/comb
 Phát PC là một view trong workspace (khung bo tròn), không phải dialog. Chỉ kết thúc phiên mới mở dialog thống kê. Thời gian/trạng thái tiếp tục chạy khi chuyển sang view khác.
 
 Nút cảm ứng, editor và profile bố cục chỉ hiện trên điện thoại/iPad, kể cả iPad dùng user-agent desktop hoặc gắn chuột. Máy tính có màn hình cảm ứng vẫn dùng UI desktop. Bàn phím/chuột Bluetooth đã ghép đôi qua hệ điều hành gửi sự kiện bàn phím/chuột thông thường trên cả hai nhóm thiết bị. Tay cầm dùng [Gamepad API](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/getGamepads), cần trình duyệt hỗ trợ, HTTPS/localhost và nhấn một nút để trang nhận controller. Host cần ViGEmBus/ViGEmClient. Phần web không tự ghép đôi Bluetooth và không xác định thiết bị đang dùng Bluetooth hay USB.
+
+
+### Thêm PC và chỉnh sửa hồ sơ
+
+Đăng nhập tài khoản Phát PC nằm trong **Thêm máy tính của bạn → PC Cloud → Tài khoản Phát PC**. Link phiên mở trực tiếp form này và điền địa chỉ host. Mã truy cập/config host là lựa chọn riêng trong cùng form. Hồ sơ tài khoản phát chỉ lưu tên đăng nhập và thông tin máy, không lưu mật khẩu phiên hay ticket. Không có hộp đăng nhập Phát PC riêng nữa.
+
+Sửa máy tính giữ nguyên ID hồ sơ kể cả đổi WebRTC/RDP/Moonlight/Parsec/Web, nhập config hay quét thông tin; thao tác lưu từ bảng Moonlight cũng cập nhật máy đang sửa. Chỉ mở form thêm mới mới tạo hồ sơ mới.

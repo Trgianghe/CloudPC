@@ -42,13 +42,17 @@ function renderMachines() {
   for (const id of ['machine-count','list-count']) $(`#${id}`).textContent = machines.length;
   $('#saved-count').innerHTML = `${machines.length} <em>máy tính</em>`;
 }
-function setMode(mode) { activeMode = mode; renderSavedRDP(); $('#connection-config-import').hidden=['rdp','moonlight'].includes(mode); $$('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode)); ['webrtc','rdp','external','parsec','moonlight'].forEach(m => $(`#${m}-fields`).hidden = m !== mode); $('#connect-submit').textContent = mode === 'moonlight' ? 'Thông tin Moonlight ↗' : mode === 'parsec' ? 'Mở Parsec ↗' : mode === 'rdp' ? 'Tải file .rdp ↓' : mode === 'external' ? 'Mở kết nối ↗' : 'Kết nối ngay ↗'; }
+function setMode(mode) { if(mode!==activeMode){rdpScanGeneration++;$('#connect-submit').disabled=false;}activeMode = mode; renderSavedRDP(); updateCloudAuth(); $$('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode)); ['webrtc','rdp','external','parsec','moonlight'].forEach(m => $(`#${m}-fields`).hidden = m !== mode); $('#connect-submit').textContent = mode === 'moonlight' ? 'Thông tin Moonlight ↗' : mode === 'parsec' ? 'Mở Parsec ↗' : mode === 'rdp' ? 'Tải file .rdp ↓' : mode === 'external' ? 'Mở kết nối ↗' : 'Kết nối ngay ↗'; }
+function updateCloudAuth(){const f=$('#connection-form'),account=f.elements.cloudAuth.value==='broadcast';$('#cloud-account-fields').hidden=!account;$('#cloud-code-fields').hidden=account;$('#cloud-code-hint').hidden=account;$('#connection-config-import').hidden=activeMode!=='webrtc'||account;}
+$('#cloud-auth').onchange=()=>{rdpScanGeneration++;$('#connect-submit').disabled=false;updateCloudAuth();};
+$('#connection-dialog').addEventListener('close',()=>{$('#connection-form').elements.broadcastPassword.value='';});
+function adoptConnectionMatch(match){const pinned=$('#connection-form').dataset.editId;editingMachine=pinned||match?.id||null;}
 function openConnection(machine=null) {
   rdpScanGeneration++; $('#rdp-scan-status').hidden=true; $('#rdp-open-local').hidden=true;
-  const f = $('#connection-form'); f.reset(); editingMachine = machine?.id || null; $('#form-error').textContent = ''; setMode(machine?.mode || 'webrtc');
+  const f = $('#connection-form');$('#connect-submit').disabled=false; f.reset(); editingMachine = machine?.id || null;f.dataset.editId=editingMachine||'';$('#connection-title').textContent=editingMachine?'Sửa máy tính':'Thêm máy tính của bạn';f.elements.cloudAuth.value=machine?(machine.authType||'code'):'broadcast';f.elements.broadcastUsername.value=machine?.broadcastUsername||''; $('#form-error').textContent = ''; setMode(machine?.mode || 'webrtc');
   f.elements.code.value=machine?.code||'';f.elements.rememberConfig.checked=machine?.rememberConfig!==false;
   f.dataset.nativeRoom=machine?.nativeRoom||'';f.dataset.nativeSignaling=machine?.nativeSignaling||'';
-  f.elements.name.value = machine?.name || 'My Gaming PC'; f.elements.url.value = machine?.url || location.origin;
+  f.elements.name.value = machine?.name || 'My Gaming PC'; f.elements.url.value = machine?.url || (window.PCCloudDeployment?.static?(machines.find(m=>m.mode==='webrtc'&&m.url!==location.origin)?.url||''):location.origin);
   for (const field of ['host','port','username','external','width','fps','bitrate']) if (machine?.[field]) f.elements[field].value = machine[field];
   f.elements.moonlightHost.value=machine?.mode==='moonlight'?machine.host||'':'';
   $('#moonlight-scan-status').hidden=true;$('#moonlight-open-local').hidden=true;
@@ -57,8 +61,8 @@ function openConnection(machine=null) {
 function safeURL(raw) { const url = new URL(raw); if (!['https:','http:'].includes(url.protocol) || url.username || url.password) throw new Error('Dùng địa chỉ HTTP/HTTPS hợp lệ, không đặt mật khẩu trong URL.'); return url; }
 function readMachine() {
   const f = $('#connection-form'); if (!f.elements.name.value.trim()) throw new Error('Nhập tên máy tính.');
-  const machine = {id:editingMachine || uid(), mode:activeMode, name:f.elements.name.value.trim()};
-  if (activeMode === 'webrtc') { machine.url = safeURL(f.elements.url.value.trim()).origin; machine.width = Number(f.elements.width.value); machine.fps = Number(f.elements.fps.value); machine.bitrate=Number(f.elements.bitrate.value);machine.rememberConfig=f.elements.rememberConfig.checked;if(machine.rememberConfig&&f.elements.code.value.trim())machine.code=f.elements.code.value.trim(); }
+  const machine = {id:f.dataset.editId || editingMachine || uid(), mode:activeMode, name:f.elements.name.value.trim()};
+  if (activeMode === 'webrtc') { machine.url = safeURL(f.elements.url.value.trim()).origin; machine.width = Number(f.elements.width.value); machine.fps = Number(f.elements.fps.value); machine.bitrate=Number(f.elements.bitrate.value);machine.authType=f.elements.cloudAuth.value==='broadcast'?'broadcast':'code';if(machine.authType==='broadcast'){machine.broadcastUsername=f.elements.broadcastUsername.value.trim();if(!machine.broadcastUsername)throw Error('Nhập tên đăng nhập Phát PC.');}else{machine.rememberConfig=f.elements.rememberConfig.checked;if(machine.rememberConfig&&f.elements.code.value.trim())machine.code=f.elements.code.value.trim();} }
   if (activeMode === 'rdp') { machine.host = f.elements.host.value.trim(); machine.port = Number(f.elements.port.value); machine.username = f.elements.username.value.trim(); CloudRDP.validate(machine); }
   if (activeMode === 'moonlight') Object.assign(machine,CloudMoonlight.validate({name:machine.name,host:f.elements.moonlightHost.value}));
   if (activeMode === 'parsec') machine.external='https://web.parsec.app/';
@@ -111,23 +115,23 @@ document.addEventListener('click', async e => {
   const action=e.target.closest('[data-action]'); if(action){openConnection();return;}
   const close=e.target.closest('[data-close]'); if(close){$(`#${close.dataset.close}`).close();return;}
   const mode=e.target.closest('[data-mode]'); if(mode){setMode(mode.dataset.mode);return;}
-  const m=e.target.closest('[data-machine]'); if(m){const machine=machines.find(x=>x.id===m.dataset.machine);if(machine){if(machine.mode==='moonlight'){showMoonlightDetails(machine);return;}if(machine.mode==='rdp'){showRDPDetails(machine);return;}if(machine.mode==='webrtc'&&machine.code){try{await connect(machine,machine.code);}catch(error){openConnection(machine);$('#form-error').textContent=error.message;}}else openConnection(machine);}return;}
+  const m=e.target.closest('[data-machine]'); if(m){const machine=machines.find(x=>x.id===m.dataset.machine);if(machine){if(machine.mode==='moonlight'){showMoonlightDetails(machine);return;}if(machine.mode==='rdp'){showRDPDetails(machine);return;}if(machine.mode==='webrtc'&&machine.authType!=='broadcast'&&machine.code){try{await connect(machine,machine.code);}catch(error){openConnection(machine);$('#form-error').textContent=error.message;}}else openConnection(machine);}return;}
   const editMachine=e.target.closest('[data-edit-machine]');if(editMachine){openConnection(machines.find(x=>x.id===editMachine.dataset.editMachine));return;}
   const del=e.target.closest('[data-delete]'); if(del){machines=machines.filter(x=>x.id!==del.dataset.delete);saveStore('pccloud.machines',machines);renderMachines();toast('Đã xóa hồ sơ PC trên trình duyệt này.');return;}
-  const share=e.target.closest('[data-share]'); if(share){const machine=machines.find(x=>x.id===share.dataset.share);if(!machine)return;if(machine.mode==='moonlight'){shareMoonlight(machine);return;}if(machine.mode==='rdp'){downloadRDP(machine);return;}const link=machine.mode==='webrtc'?`${machine.url}/?connect=1&name=${encodeURIComponent(machine.name)}`:machine.external;try{await navigator.clipboard.writeText(link);toast('Đã sao chép link. Người nhận cần mã truy cập riêng.');}catch{toast('Không sao chép được. Link PC: '+link);}return;}
+  const share=e.target.closest('[data-share]'); if(share){const machine=machines.find(x=>x.id===share.dataset.share);if(!machine)return;if(machine.mode==='moonlight'){shareMoonlight(machine);return;}if(machine.mode==='rdp'){downloadRDP(machine);return;}const link=machine.mode==='webrtc'?`${machine.url}/?${machine.authType==='broadcast'?'join':'connect'}=1&name=${encodeURIComponent(machine.name)}`:machine.external;try{await navigator.clipboard.writeText(link);toast(machine.authType==='broadcast'?'Đã sao chép link. Người nhận nhập tài khoản Phát PC trong Thêm máy tính.':'Đã sao chép link. Người nhận cần mã truy cập riêng.');}catch{toast('Không sao chép được. Link PC: '+link);}return;}
   const edit=e.target.closest('[data-edit-control]'); if(edit){openControl(controls.find(c=>c.id===edit.dataset.editControl));return;}
   const remove=e.target.closest('[data-remove-control]'); if(remove){releaseAll();controls=controls.filter(c=>c.id!==remove.dataset.removeControl);persistControls();return;}
   const input=e.target.closest('[data-input]'); if(input){releaseAll();inputMode=input.dataset.input;$$('[data-input]').forEach(b=>b.classList.toggle('selected',b===input));renderTouchControls();}
 });
 $('#guide-top').onclick=()=>showView('guide');
 $('#import-connection-config').onchange=async e=>{
-  const file=e.target.files[0];if(!file)return;
+  const file=e.target.files[0];if(!file)return;const generation=rdpScanGeneration;
   $('#form-error').textContent='';
   try{
     if(file.size>65536)throw new Error('File cấu hình quá lớn. Giới hạn 64 KB.');
     const parsed=parseConnectionConfig(await file.text(),location.origin);
-    if(!$('#connection-dialog').open)return;
-    const form=$('#connection-form');setMode(parsed.mode||'webrtc');editingMachine=machines.find(m=>m.mode===(parsed.mode||'webrtc')&&(parsed.mode==='rdp'?m.host===parsed.host:m.url===parsed.url)&&m.name===parsed.name)?.id||null;
+    if(generation!==rdpScanGeneration||!$('#connection-dialog').open)return;
+    const form=$('#connection-form');form.elements.cloudAuth.value='code';setMode(parsed.mode||'webrtc');adoptConnectionMatch(machines.find(m=>m.mode===(parsed.mode||'webrtc')&&(parsed.mode==='rdp'?m.host===parsed.host:m.url===parsed.url)&&m.name===parsed.name));
     for(const field of ['name','url','code','width','fps','bitrate','host','port','username'])if(parsed[field]!==undefined)form.elements[field].value=parsed[field];
     form.dataset.nativeRoom=parsed.nativeRoom||'';form.dataset.nativeSignaling=parsed.nativeSignaling||'';
     toast(parsed.mode==='rdp'?'Đã điền thông tin RDP. Lưu máy tính để dùng lại.':'Đã tự điền cấu hình. Kiểm tra địa chỉ rồi nhấn Kết nối ngay.');
@@ -135,7 +139,17 @@ $('#import-connection-config').onchange=async e=>{
   finally{e.target.value='';}
 };
 $('#save-pc').onclick=()=>{try{storeMachine(readMachine());$('#connection-dialog').close();toast('Đã lưu PC và lựa chọn lưu cấu hình.');}catch(e){$('#form-error').textContent=e.message;}};
-$('#connection-form').addEventListener('submit',async e=>{e.preventDefault();$('#form-error').textContent='';try{const machine=readMachine();const code=e.target.elements.code.value; if(machine.mode==='webrtc'&&machine.url===location.origin&&!code)throw new Error('Nhập mã truy cập trong config.json trên PC.'); storeMachine(machine);$('#connection-dialog').close();e.target.elements.code.value='';if(machine.mode==='moonlight')showMoonlightDetails(machine);else if(machine.mode==='rdp')showRDPDetails(machine);else if(['external','parsec'].includes(machine.mode))window.open(machine.external,'_blank','noopener,noreferrer');else await connect(machine,code);}catch(error){if(!$('#connection-dialog').open)$('#connection-dialog').showModal();$('#form-error').textContent=error.message;}});
+$('#connection-form').addEventListener('submit',async e=>{
+ e.preventDefault();$('#form-error').textContent='';const generation=rdpScanGeneration;let committed=false;const submit=$('#connect-submit');if(submit.disabled)return;submit.disabled=true;
+ try{
+  const machine=readMachine(),code=e.target.elements.code.value;let guest=null;
+  if(machine.mode==='webrtc'&&machine.authType==='broadcast')guest=await CloudBroadcast.authenticate(machine,e.target.elements.broadcastPassword.value);
+  else if(machine.mode==='webrtc'&&machine.url===location.origin&&!code)throw Error('Nhập mã truy cập trong config.json trên PC.');
+  if(generation!==rdpScanGeneration||!$('#connection-dialog').open)return;storeMachine(machine);committed=true;$('#connection-dialog').close();e.target.elements.code.value='';e.target.elements.broadcastPassword.value='';
+  if(machine.mode==='moonlight')showMoonlightDetails(machine);else if(machine.mode==='rdp')showRDPDetails(machine);else if(['external','parsec'].includes(machine.mode))window.open(machine.external,'_blank','noopener,noreferrer');
+  else if(guest)await connect({...machine,nativeRoom:guest.room,nativeSignaling:machine.url.replace(/^http/,'ws')+'/signal'},guest.ticket);else await connect(machine,code);
+ }catch(error){if(generation!==rdpScanGeneration||(!committed&&!$('#connection-dialog').open))return;if(!$('#connection-dialog').open)$('#connection-dialog').showModal();$('#form-error').textContent=error.message;}finally{if(generation===rdpScanGeneration)submit.disabled=false;}
+});
 $('#demo-button').onclick=async()=>{await disconnect();openSession('Khám phá PC Cloud',true);toast('Đây là giao diện mẫu. Chưa truyền hình ảnh hoặc điều khiển PC.');};
 $('#disconnect').onclick=disconnect;
 $('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('#session').requestFullscreen();}catch{toast('Trình duyệt này không hỗ trợ toàn màn hình. Hãy xoay ngang điện thoại.');}};
@@ -206,7 +220,7 @@ $('#rdp-scan').onclick=async()=>{
     const info=await response.json(),parsed=CloudRDP.validate(info);
     if(generation!==rdpScanGeneration||!$('#connection-dialog').open||activeMode!=='rdp')return;
     const form=$('#connection-form');
-    editingMachine=machines.find(m=>m.mode==='rdp'&&m.host===parsed.host&&Number(m.port)===parsed.port&&m.username===parsed.username)?.id||null;
+    adoptConnectionMatch(machines.find(m=>m.mode==='rdp'&&m.host===parsed.host&&Number(m.port)===parsed.port&&m.username===parsed.username));
     for(const field of ['name','host','port','username'])form.elements[field].value=parsed[field]||'';
     form.dataset.nativeRoom='';form.dataset.nativeSignaling='';
     status.textContent='Đã quét '+info.name+' · '+info.edition+'. '+info.message;

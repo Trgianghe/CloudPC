@@ -40,20 +40,11 @@
  $('#broadcast-save').onclick=async()=>{preferencesLoaded=false;await owner('configure',{preferences:{custom:$('#broadcast-custom').checked,prefix:$('#broadcast-prefix').value,username:$('#broadcast-custom-name').value,password:$('#broadcast-custom-password').value}});};
  $('#broadcast-copy').onclick=async()=>{try{await navigator.clipboard.writeText($('#broadcast-link').value+'\nTên: '+$('#broadcast-username').value+'\nMật khẩu: '+$('#broadcast-password').value);toast('Đã sao chép thông tin phiên. Chỉ gửi cho người được phép điều khiển PC.');}catch{toast('Chọn từng ô để sao chép thông tin.');}};
  setInterval(tick,250);setInterval(()=>{if(!$('#broadcast').hidden&&!document.hidden)owner();},5000);
- function guestOrigin(){if(!window.PCCloudDeployment?.static)return location.origin;const machine=machines.find(m=>m.mode==='webrtc'&&m.url&&m.url!==location.origin);return machine?safeURL(machine.url).origin:null;}
- function openGuest(){const target=guestOrigin();$('#broadcast-target').textContent=target?'PC đích: '+target:'Mở link Phát PC do chủ máy cung cấp để xác định PC đích.';$('#broadcast-login-error').textContent='';$('#broadcast-login').showModal();}
- $('#broadcast-guest-open').onclick=openGuest;
- $('#broadcast-login-form').onsubmit=async event=>{
-  event.preventDefault();const target=guestOrigin();if(!target){$('#broadcast-login-error').textContent='Cần mở link Phát PC của máy bạn muốn vào.';return;}
-  const button=event.target.querySelector('button[type=submit]');button.disabled=true;
-  try{
-   const response=await fetch(target+'/api/broadcast/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:event.target.elements.username.value.trim(),password:event.target.elements.password.value}),credentials:'omit',signal:AbortSignal.timeout(10000)});
-   const data=await response.json();if(!response.ok)throw Error(data.error||'Đăng nhập không thành công.');
-   $('#broadcast-login').close();event.target.elements.password.value='';
-   await connect({name:data.name,url:target,nativeSignaling:target.replace(/^http/,'ws')+'/signal',nativeRoom:data.room,width:1920,fps:60,bitrate:20},data.ticket);
-  }catch(error){if(!$('#broadcast-login').open)$('#broadcast-login').showModal();$('#broadcast-login-error').textContent=error.message;}
-  finally{button.disabled=false;}
- };
+ window.CloudBroadcast={authenticate:async(machine,password)=>{
+  if(!password)throw Error('Nhập mật khẩu phiên Phát PC.');
+  const response=await fetch(machine.url+'/api/broadcast/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:machine.broadcastUsername,password}),credentials:'omit',signal:AbortSignal.timeout(10000)});
+  const data=await response.json();if(!response.ok)throw Error(data.error||'Đăng nhập không thành công.');return data;
+ }};
  if(params.get('broadcast')==='1'){showView('broadcast');owner();history.replaceState({},'',location.pathname);}
- if(params.get('join')==='1'){openGuest();history.replaceState({},'',location.pathname);}
+ if(params.get('join')==='1'){openConnection({name:params.get('name')||'My Gaming PC',mode:'webrtc',authType:'broadcast',url:location.origin});history.replaceState({},'',location.pathname);}
 })();
