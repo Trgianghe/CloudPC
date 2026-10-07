@@ -154,3 +154,7 @@ Tab Remote Desktop dùng **Quét máy này** thay cho nhập JSON: chạy `open_
 Kiểm thử quét: endpoint và UI local tự điền được thông tin, kiểm thử quyền truy cập và xuất/đọc lại UTF-16 đã qua. Sự kiện download trong trình duyệt Codex chưa được xác nhận; cần thử tải `.rdp` bằng Chrome.
 
 Trình duyệt trong ứng dụng đã chặn fetch localhost từ Pages trong kiểm thử. Bảng sẽ hiện **Mở web local để quét**; liên kết `/?rdp=scan` mở đúng tab RDP và quét trên host local.
+
+### Moonlight trên điện thoại
+
+Tab **Moonlight** lưu IP/hostname PC chạy Sunshine, quét địa chỉ bằng host local, hiển thị hướng dẫn ghép đôi PIN, link Android/iOS, sao chép IP và link hồ sơ cho điện thoại. Link chỉ chứa tên PC và địa chỉ, không chứa mật khẩu/token/RDP username. Profile mở từ link chưa lưu vào trình duyệt cho đến khi người dùng chọn lưu PC. Hồ sơ không chứng minh Sunshine đang chạy; chưa kiểm thử stream Moonlight với điện thoại thật. Web không cài Sunshine, bật firewall, nhập PIN thay người dùng hay nhúng native Moonlight. Sunshine/Moonlight dùng được mà không cần RDP Pro; thiết lập theo tài liệu chính thức: https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide .

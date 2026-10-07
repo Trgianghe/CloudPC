@@ -28,3 +28,7 @@ dialog{background:#101c1e;border:1px solid #29433c;border-radius:20px;box-shadow
 .rdp-detail-row{display:flex;align-items:center;gap:16px;padding:18px 0;border-bottom:1px solid #ffffff18}.rdp-detail-row>div{flex:1;min-width:0}.rdp-detail-row small{display:block;color:var(--muted,#9ca8bc);margin-bottom:8px}.rdp-detail-row strong{display:block;overflow-wrap:anywhere;user-select:text}.rdp-saved-list{display:grid;gap:8px;margin:14px 0}.rdp-saved-list button{text-align:left;overflow-wrap:anywhere}
 
 .rdp-scan-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.rdp-not-ready{border:1px solid #ffbd6640;background:#ffbd6610;border-radius:12px;padding:12px;color:#f1c589!important}
+
+#connection-form>.tabs{flex-wrap:wrap}.moonlight-steps{padding-left:22px;line-height:1.75}.moonlight-steps li{padding:7px 0}.moonlight-steps a{color:#a7c6ff}
+
+#moonlight-details .dialog-actions{flex-wrap:wrap}#moonlight-details .dialog-actions .button{flex:1 1 145px;justify-content:center;text-align:center}
