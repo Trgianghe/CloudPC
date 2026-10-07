@@ -167,3 +167,10 @@ Chạy `open_web.bat` trên PC host, mở **Phát PC** trên web local rồi b�
 Đây là tài khoản khách của **PC Cloud WebRTC**. RDP vẫn dùng tài khoản Windows; Moonlight ghép PIN với Sunshine; Parsec sử dụng tài khoản và quyền của Parsec. Không tự tạo tài khoản Windows hay bỏ qua xác thực các ứng dụng này. GitHub Pages chỉ chứa giao diện: host phải đang chạy và có địa chỉ HTTPS/WSS hợp lệ khi kết nối từ Pages. Link LAN cần cùng mạng và cổng web được cho phép; launcher không tự mở firewall/router. Không chia sẻ thông tin truy cập qua HTTP trên mạng không tin cậy.
 
 Trong Cloud Setting → Điều khiển → Tùy chỉnh nút, chọn Phím/combo, joystick Di chuyển hoặc Nhìn quanh. Joystick Di chuyển cho chọn riêng bốn phím hướng; Nhìn quanh gửi delta chuột liên tục với vùng chết ở tâm. Nút chọn có tay nắm góc để tăng/giảm kích thước, lưu cùng profile và JSON. Chỉnh bố cục ngừng input vào host; hủy/tắt kết nối nhả các phím đang giữ.
+
+
+### Thiết bị đầu vào và trang Phát PC
+
+Phát PC là một view trong workspace (khung bo tròn), không phải dialog. Chỉ kết thúc phiên mới mở dialog thống kê. Thời gian/trạng thái tiếp tục chạy khi chuyển sang view khác.
+
+Nút cảm ứng, editor và profile bố cục chỉ hiện trên điện thoại/iPad, kể cả iPad dùng user-agent desktop hoặc gắn chuột. Máy tính có màn hình cảm ứng vẫn dùng UI desktop. Bàn phím/chuột Bluetooth đã ghép đôi qua hệ điều hành gửi sự kiện bàn phím/chuột thông thường trên cả hai nhóm thiết bị. Tay cầm dùng [Gamepad API](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/getGamepads), cần trình duyệt hỗ trợ, HTTPS/localhost và nhấn một nút để trang nhận controller. Host cần ViGEmBus/ViGEmClient. Phần web không tự ghép đôi Bluetooth và không xác định thiết bị đang dùng Bluetooth hay USB.

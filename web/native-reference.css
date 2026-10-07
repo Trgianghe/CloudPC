@@ -328,3 +328,7 @@ body.editing #settings{z-index:102}body.editing #edge-handle{z-index:103}
 @media(max-height:450px){#layout-studio{width:310px;top:10px;bottom:10px;right:10px}#settings{top:10px;right:10px;height:calc(100dvh - 20px)}#layout-studio header{padding:10px 14px}.studio-help{padding-bottom:7px}#layout-studio footer{padding:8px 14px}#settings header{padding:12px 18px}}
 
 .control-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}.control-palette button{min-height:42px}.control-resize{display:none;position:absolute;right:-6px;bottom:-6px;width:28px;height:28px;align-items:center;justify-content:center;border-radius:50%;background:#fff;color:#142448;opacity:1;touch-action:none;cursor:nwse-resize}.editing .touch-key.selected .control-resize{display:flex}
+
+html:not(.mobile-client) [data-mobile-controls],html:not(.mobile-client) #controls,html:not(.mobile-client) #layout-studio{display:none!important}
+
+html.mobile-client [data-desktop-controls]{display:none!important}

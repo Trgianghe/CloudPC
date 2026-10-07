@@ -5,6 +5,9 @@
  function showTab(name){releaseAll();for(const b of tabs){const on=b.dataset.cloudTab===name;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));}for(const page of $$('.cloud-page'))page.hidden=page.dataset.cloudPage!==name;$('#settings .scroll').scrollTop=0;}
  for(const b of tabs)b.onclick=()=>showTab(b.dataset.cloudTab);
  showTab('image');
+ const peripheral=$('#peripheral-status');let lastPeripheral='';
+ function devices(){const pads=CloudDevices.gamepads(navigator),supported=typeof navigator.getGamepads==='function';const text=!isSecureContext?'Tay cầm cần HTTPS (hoặc localhost trên PC).':!supported?'Trình duyệt này chưa cung cấp Gamepad API.':pads.length?'Đã nhận '+pads.length+' tay cầm · '+(hostCaps?.gamepad?'host có ViGEmBus.':'host cần ViGEmBus để nhận tay cầm.'):'Chưa nhận tay cầm. Nhấn một nút trên tay cầm khi trang đang mở.';if(text!==lastPeripheral){peripheral.textContent=text;lastPeripheral=text;}}
+ addEventListener('gamepadconnected',devices);addEventListener('gamepaddisconnected',devices);setInterval(devices,2000);devices();
  const oldSelect=selectButtons;
  function updateFPS(){const fps=S.fps;$('#fps-slider').value=fps===0?501:fps;$('#fps-target').textContent=fps===0?'∞':fps;$('#fps-explanation').textContent=fps===0?'Không khóa FPS nhận. Host yêu cầu capture tối đa 500 FPS; phần cứng quyết định FPS thực.':'FPS mục tiêu, không phải FPS thực nhận. Thả thanh kéo để áp dụng.';}
  selectButtons=function(){oldSelect();updateFPS();};updateFPS();
@@ -13,7 +16,7 @@
  $('#fps-toggle').onclick=()=>{const quick=$('#refresh-rate').hidden;$('#refresh-rate').hidden=!quick;$('#fps-custom').hidden=quick;$('#fps-toggle').textContent=quick?'Thanh kéo':'Chọn nhanh';};
 
  const oldEdit=$('#edit-controls').onclick;
- $('#edit-controls').onclick=()=>{oldEdit();$('#layout-studio').hidden=false;closeSettings();};
+ $('#edit-controls').onclick=()=>{if(!S.mobile)return;oldEdit();$('#layout-studio').hidden=false;closeSettings();};
  const oldFinish=finishEdit;
  finishEdit=function(cancel){oldFinish(cancel);$('#layout-studio').hidden=true;$('#profile-name').value='';};
  $('#studio-done').onclick=()=>{finishEdit(false);toast('Đã áp dụng bố cục phiên này. Lưu profile để dùng lại.');};
