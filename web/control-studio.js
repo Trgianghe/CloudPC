@@ -6,7 +6,7 @@
  for(const [label,kind] of kinds){const b=document.createElement('button');b.type='button';b.className='small-action';b.textContent=label;b.onclick=()=>{
   if(!S.editing||controls.length>=40)return;releaseAll();
   if(kind==='key'){createPlacedControl(50,50);return;}
-  const stick=kind==='move'||kind==='look',c={id:crypto.randomUUID(),label,action:stick?'joystick':kind,stickMode:kind==='look'?'look':'move',vk:87,keys:stick?[87,65,83,68]:[87],hold:true,opacity:.65,x:kind==='look'?78:50,y:70,size:stick?120:60,shape:'circle',movement:kind==='move'};
+  const stick=kind==='move'||kind==='look',c={id:CloudTouch.id(),label,action:stick?'joystick':kind,stickMode:kind==='look'?'look':'move',vk:87,keys:stick?[87,65,83,68]:[87],hold:true,opacity:.65,x:kind==='look'?78:50,y:70,size:stick?120:60,shape:'circle',movement:kind==='move'};
   controls.push(c);renderControls();selectControl(c);
  };palette.append(b);}editor.prepend(palette);
  const kindLabel=document.createElement('label');kindLabel.textContent='Chức năng joystick';const selector=document.createElement('select');selector.className='input';selector.innerHTML='<option value="move">Di chuyển · 4 phím tùy chọn</option><option value="look">Nhìn xung quanh · chuột tương đối</option>';kindLabel.append(selector);editor.querySelector('.editor-grid').append(kindLabel);

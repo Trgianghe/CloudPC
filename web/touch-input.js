@@ -1,6 +1,7 @@
 (function(root){
   'use strict';
   const active=new Set();
+  function id(){return root.crypto.randomUUID?.()||[...root.crypto.getRandomValues(new Uint8Array(16))].map(n=>n.toString(16).padStart(2,'0')).join('');}
   function directions(x,y,deadzone=.2){
     if(!Number.isFinite(x)||!Number.isFinite(y)||Math.hypot(x,y)<deadzone)return [];
     // 8 directions, with a 45 degree diagonal sector; never opposite keys.
@@ -40,6 +41,6 @@
   }
   function resetAll(){for(const reset of active)reset();}
   function disposeAll(){resetAll();active.clear();}
-  root.CloudTouch={directions,combo,withoutMovement,bindJoystick,resetAll,disposeAll};
+  root.CloudTouch={id,directions,combo,withoutMovement,bindJoystick,resetAll,disposeAll};
   if(typeof module==='object')module.exports=root.CloudTouch;
 })(globalThis);
