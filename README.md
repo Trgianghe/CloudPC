@@ -181,3 +181,13 @@ Nút cảm ứng, editor và profile bố cục chỉ hiện trên điện tho�
 Đăng nhập tài khoản Phát PC nằm trong **Thêm máy tính của bạn → PC Cloud → Tài khoản Phát PC**. Link phiên mở trực tiếp form này và điền địa chỉ host. Mã truy cập/config host là lựa chọn riêng trong cùng form. Hồ sơ tài khoản phát chỉ lưu tên đăng nhập và thông tin máy, không lưu mật khẩu phiên hay ticket. Không có hộp đăng nhập Phát PC riêng nữa.
 
 Sửa máy tính giữ nguyên ID hồ sơ kể cả đổi WebRTC/RDP/Moonlight/Parsec/Web, nhập config hay quét thông tin; thao tác lưu từ bảng Moonlight cũng cập nhật máy đang sửa. Chỉ mở form thêm mới mới tạo hồ sơ mới.
+
+
+### Thêm PC bằng tài khoản phiên phát
+
+- Thêm máy tính chỉ nhập tên đăng nhập Phát PC và mật khẩu phiên. Mở link Phát PC của chủ máy một lần để web biết địa chỉ host; GitHub Pages không có dịch vụ tra cứu tên tài khoản toàn cầu. Không gửi mật khẩu đến nhiều host để dò tìm.
+- Sau đăng nhập thành công mới lưu PC. Bấm PC đã lưu để xem thông tin chỉ đọc, chọn ứng dụng, copy từng mục hoặc kết nối web. Không có form sửa IP/cổng trong luồng này.
+- Hồ sơ giữ token phiên có thời hạn tối đa 12 giờ, không lưu mật khẩu. Tạm dừng chặn stream nhưng giữ hồ sơ. Kết thúc hiển thị máy đã tắt/hết hạn; phiên mới hoặc restart host vô hiệu token cũ. Có thể xóa hồ sơ hết hạn.
+- Trạng thái được làm mới mỗi 5 giây khi trang đang mở. Mất mạng không bị coi là hết hạn: hiển thị máy chưa phản hồi.
+- Thông tin RDP gồm địa chỉ/cổng/tài khoản Windows thật, không tiết lộ mật khẩu Windows. Moonlight vẫn cần Sunshine và PIN ghép đôi; Parsec vẫn cần tài khoản Parsec được host cấp quyền. Phát PC không tạo tài khoản Windows hay tự cấp quyền cho ứng dụng khác.
+- Host phải cập nhật mã nguồn và chạy lại open_web.bat để có API /api/broadcast/session.

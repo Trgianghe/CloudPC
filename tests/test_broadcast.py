@@ -48,4 +48,24 @@ class BroadcastTests(unittest.IsolatedAsyncioTestCase):
             b.configure({'custom':False,'prefix':'game'})
             self.assertEqual(Broadcast(path).preferences['password'],'')
 
+    async def test_saved_access_survives_pause_but_not_new_session(self):
+        now=[0.0];b=Broadcast(clock=lambda:now[0]);await b.transition('start')
+        b.login(b.username,b.password,'test');access=b.issue_access()
+        first=b.guest_state(access,True)['ticket']
+        await b.transition('pause')
+        self.assertEqual(b.guest_state(access)['state'],'paused')
+        self.assertNotIn(first,b.tickets)
+        with self.assertRaises(ValueError):b.guest_state(access,True)
+        await b.transition('resume');self.assertIn('ticket',b.guest_state(access,True))
+        await b.transition('stop');self.assertEqual(b.guest_state(access)['state'],'off')
+        with self.assertRaises(ValueError):b.guest_state(access,True)
+        await b.transition('start')
+        with self.assertRaises(PermissionError):b.guest_state(access)
+
+    async def test_access_expiry_and_invalid_token(self):
+        now=[0.0];b=Broadcast(clock=lambda:now[0]);await b.transition('start');access=b.issue_access()
+        with self.assertRaises(PermissionError):b.guest_state('not-a-session')
+        now[0]=43201
+        with self.assertRaises(PermissionError):b.guest_state(access,True)
+
 if __name__=='__main__':unittest.main()

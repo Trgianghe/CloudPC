@@ -42,6 +42,7 @@ class Broadcast:
         self.state='off';self.username='';self.password='';self.digest=b''
         self.active=0.;self.paused=0.;self.changed=self.clock();self.started=0.;self.connections=0
         self.generation=0;self.tickets={};self.clients=set();self.joined=set();self.attempts={};self.last=None
+        self.session_id='';self.grants={}
 
     def configure(self,value):
         if self.state!='off':raise ValueError('Kết thúc phiên trước khi đổi thông tin truy cập.')
@@ -70,7 +71,7 @@ class Broadcast:
     async def transition(self,action):
         if action=='start':
             if self.state!='off':raise ValueError('Phiên đã được bật.')
-            self.generation+=1;pref=self.preferences
+            self.generation+=1;pref=self.preferences;self.session_id=secrets.token_urlsafe(24)
             self.username=pref['username'] if pref['custom'] else pref['prefix']+'-'+secrets.token_hex(3)
             self.password=pref['password'] if pref['custom'] else secrets.token_urlsafe(18)
             self.salt=secrets.token_bytes(16);self.digest=await asyncio.to_thread(hashlib.scrypt,self.password.encode(),salt=self.salt,n=16384,r=8,p=1)
@@ -115,9 +116,39 @@ class Broadcast:
 
     def detach(self,close):self.clients.discard(close);self.joined.discard(close)
 
+    def issue_access(self):
+        now=self.clock()
+        self.grants={key:value for key,value in self.grants.items() if value[0]>now}
+        if len(self.grants)>=256:raise PermissionError('Quá nhiều hồ sơ truy cập. Thử lại sau.')
+        token=secrets.token_urlsafe(32)
+        self.grants[hashlib.sha256(token.encode()).digest()]=(now+43200,self.session_id)
+        return token
+
+    def guest_state(self,token,connect=False):
+        expiry,session=self.grants.get(hashlib.sha256(token.encode()).digest(),(0,''))
+        if expiry<=self.clock() or not session or session!=self.session_id:
+            raise PermissionError('Phiên đã hết hạn. Đăng nhập phiên phát mới.')
+        result={'state':self.state,'sessionId':session,'username':self.username}
+        if connect:
+            if self.state!='running':raise ValueError('PC đã tạm dừng.' if self.state=='paused' else 'Máy này đã tắt. Phiên đã hết hạn.')
+            now=self.clock()
+            self.tickets={key:value for key,value in self.tickets.items() if value[0]>now}
+            if len(self.tickets)>=64:raise ValueError('Quá nhiều yêu cầu kết nối.')
+            ticket='bc_'+secrets.token_urlsafe(32);self.tickets[ticket]=(now+60,self.generation)
+            result['ticket']=ticket
+        return result
+
 
 def register_broadcast(app,root,manager):
     action_lock=asyncio.Lock()
+    async def connection_info(request):
+        info=await asyncio.to_thread(collect_info)
+        cfg=json.loads((root/'cloud-native/host.config.json').read_text(encoding='utf-8-sig'))
+        return {'room':cfg['room'],'name':info['name'],'apps':{
+            'webrtc':{'label':'PC Cloud · trên web'},
+            'rdp':{'label':'Remote Desktop','host':info['host'],'port':info['port'],'username':info['username'],'supported':info['rdpSupported'],'enabled':info['rdpEnabled'],'message':info['message']},
+            'moonlight':{'label':'Moonlight / Sunshine','host':info['host'],'message':'Thêm địa chỉ này trong Moonlight. Cần Sunshine đang chạy trên PC; ghép đôi bằng PIN trên Sunshine. Chưa kiểm tra trạng thái Sunshine.'},
+            'parsec':{'label':'Parsec','url':'https://web.parsec.app/','message':'Đăng nhập tài khoản Parsec được host cấp quyền. Tài khoản Phát PC không phải tài khoản Parsec.'}}}
     def cors(request):
         origin=request.headers.get('Origin');allowed={f'{request.scheme}://{request.host}','https://trgianghe.github.io'}
         if origin and origin not in allowed:raise web.HTTPForbidden(text='Trang này không được phép đăng nhập phiên phát.')
@@ -161,10 +192,27 @@ def register_broadcast(app,root,manager):
             data=await request.json()
             if not isinstance(data,dict):raise ValueError('Yêu cầu không hợp lệ.')
             ticket=await asyncio.to_thread(manager.login,str(data.get('username','')),str(data.get('password','')),request.remote)
-            cfg=json.loads((root/'cloud-native/host.config.json').read_text(encoding='utf-8-sig'))
-            return web.json_response({'ticket':ticket,'room':cfg['room'],'name':'PC đang phát'},headers=headers)
+            # Metadata is returned only after authentication. No Windows passwords.
+            details=await connection_info(request)
+            if ticket not in manager.tickets or manager.state!='running':raise PermissionError('Phiên đã thay đổi. Đăng nhập lại.')
+            access=manager.issue_access()
+            return web.json_response({**details,'ticket':ticket,'access':access,'sessionId':manager.session_id,'state':manager.state},headers=headers)
         except PermissionError as error:return web.json_response({'error':str(error)},status=401,headers=headers)
         except (ValueError,TypeError,OSError):return web.json_response({'error':'Không đăng nhập được. Kiểm tra host đã bật.'},status=400,headers=headers)
 
+    async def session(request):
+        headers=cors(request)
+        if request.method=='OPTIONS':return web.Response(status=204,headers=headers)
+        try:
+            data=await request.json()
+            if not isinstance(data,dict) or not isinstance(data.get('access'),str) or len(data['access'])>128:raise PermissionError('Phiên đã hết hạn.')
+            result=manager.guest_state(data['access'],data.get('action')=='connect')
+            if 'ticket' in result:
+                cfg=json.loads((root/'cloud-native/host.config.json').read_text(encoding='utf-8-sig'));result['room']=cfg['room']
+            return web.json_response(result,headers=headers)
+        except PermissionError as error:return web.json_response({'error':str(error),'state':'expired'},status=401,headers=headers)
+        except (ValueError,TypeError,OSError) as error:return web.json_response({'error':str(error)},status=400,headers=headers)
+
     app.router.add_post('/api/broadcast',owner);app.router.add_options('/api/broadcast',owner)
     app.router.add_post('/api/broadcast/login',guest);app.router.add_options('/api/broadcast/login',guest)
+    app.router.add_post('/api/broadcast/session',session);app.router.add_options('/api/broadcast/session',session)
