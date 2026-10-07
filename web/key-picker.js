@@ -1,11 +1,12 @@
 (function(root){
   'use strict';
-  const names={8:'Backspace',9:'Tab',13:'Enter',16:'Shift',17:'Ctrl',18:'Alt',27:'Esc',32:'Space',33:'PgUp',34:'PgDn',35:'End',36:'Home',37:'←',38:'↑',39:'→',40:'↓',45:'Ins',46:'Del',91:'Win',186:';',187:'=',188:',',189:'-',190:'.',191:'/',192:'`',219:'[',220:']',221:'\\',222:"'"};
+  const names={8:'Backspace',9:'Tab',13:'Enter',16:'Shift',17:'Ctrl',18:'Alt',19:'Pause',20:'Caps Lock',27:'Esc',32:'Space',33:'PgUp',34:'PgDn',35:'End',36:'Home',37:'←',38:'↑',39:'→',40:'↓',44:'PrtSc',45:'Ins',46:'Del',91:'Win L',92:'Win R',93:'Menu',106:'Num *',107:'Num +',109:'Num −',110:'Num .',111:'Num /',144:'Num Lock',145:'Scroll Lock',160:'Shift L',161:'Shift R',162:'Ctrl L',163:'Ctrl R',164:'Alt L',165:'Alt R',173:'Mute',174:'Vol −',175:'Vol +',179:'Play/Pause',186:';',187:'=',188:',',189:'-',190:'.',191:'/',192:'`',219:'[',220:'\\',221:']',222:"'",254:'Num Enter'};
   for(let k=48;k<=90;k++)if(k<=57||k>=65)names[k]=String.fromCharCode(k);
+  for(let k=96;k<=105;k++)names[k]='Num '+(k-96);
   for(let k=112;k<=123;k++)names[k]='F'+(k-111);
   const label=keys=>keys.map(k=>names[k]||'VK '+k).join(' + ');
-  const rows=[[27,...Array.from({length:12},(_,i)=>112+i)],[192,...Array.from({length:10},(_,i)=>i===9?48:49+i),189,187,8],[9,...'QWERTYUIOP'.split('').map(c=>c.charCodeAt(0)),219,220,221],[20,...'ASDFGHJKL'.split('').map(c=>c.charCodeAt(0)),186,222,13],[16,...'ZXCVBNM'.split('').map(c=>c.charCodeAt(0)),188,190,191],[17,91,18,32,45,46,36,35,33,34,37,38,40,39]];
-  names[20]='Caps';
+  const sections=[{name:'Chính',kind:'main',rows:[[27,...Array.from({length:12},(_,i)=>112+i)],[192,...'1234567890'.split('').map(c=>c.charCodeAt(0)),189,187,8],[9,...'QWERTYUIOP'.split('').map(c=>c.charCodeAt(0)),219,221,220],[20,...'ASDFGHJKL'.split('').map(c=>c.charCodeAt(0)),186,222,13],[160,...'ZXCVBNM'.split('').map(c=>c.charCodeAt(0)),188,190,191,161],[162,91,164,32,165,92,93,163]]},{name:'Điều hướng',kind:'navigation',rows:[[44,145,19],[45,36,33],[46,35,34],[38],[37,40,39]]},{name:'Cụm số',kind:'numpad',rows:[[144,111,106,109],[103,104,105,107],[100,101,102],[97,98,99,254],[96,110]]},{name:'Âm thanh',kind:'media',rows:[[173,174,175,179]]}];
+  function board(className,onKey){const keyboard=document.createElement('div');keyboard.className='full-keyboard '+className;for(const section of sections){const group=document.createElement('section');group.className='keyboard-section '+section.kind;const heading=document.createElement('small');heading.textContent=section.name;group.append(heading);for(const row of section.rows){const line=document.createElement('div');line.className=className==='live-keyboard-board'?'live-keyboard-row':'key-picker-row';for(const vk of row){const b=document.createElement('button');b.type='button';b.dataset.vk=vk;b.textContent=section.kind==='numpad'?(vk===144?'Num':vk===254?'Enter':names[vk].replace(/^Num /,'')):vk===145?'Scroll':vk===20?'Caps':names[vk];b.setAttribute('aria-label','Phím '+names[vk]);onKey(b,vk);line.append(b);}group.append(line);}keyboard.append(group);}return keyboard;}
   let dialog,state,output,manual,error,mouseRow;
   function choose(keys,vk,single){if(single)return [vk];return keys.includes(vk)?keys.filter(k=>k!==vk):keys.length<6?[...keys,vk]:keys;}
   function refresh(){output.textContent=state.keys.length?label(state.keys):'Chạm một hoặc nhiều phím';manual.value=state.keys.length?state.keys.join(', '):'';for(const b of dialog.querySelectorAll('[data-vk]'))b.setAttribute('aria-pressed',String(state.keys.includes(Number(b.dataset.vk))));}
@@ -13,8 +14,7 @@
     dialog=document.createElement('dialog');dialog.className='key-picker';dialog.setAttribute('aria-label','Bàn phím chọn nút');
     const header=document.createElement('header'),title=document.createElement('strong'),close=document.createElement('button');title.id='key-picker-title';close.type='button';close.textContent='×';close.setAttribute('aria-label','Đóng bàn phím');close.onclick=()=>dialog.close();header.append(title,close);dialog.append(header);
     output=document.createElement('p');output.className='key-picker-selection';dialog.append(output);
-    const keyboard=document.createElement('div');keyboard.className='key-picker-board';
-    for(const row of rows){const line=document.createElement('div');line.className='key-picker-row';for(const vk of row){const b=document.createElement('button');b.type='button';b.dataset.vk=vk;b.textContent=names[vk];b.setAttribute('aria-label',names[vk]);b.onclick=()=>{state.keys=choose(state.keys,vk,state.single);error.textContent='';refresh();};line.append(b);}keyboard.append(line);}dialog.append(keyboard);
+    dialog.append(board('key-picker-board',(b,vk)=>{b.onclick=()=>{state.keys=choose(state.keys,vk,state.single);error.textContent='';refresh();};}));
     mouseRow=document.createElement('div');mouseRow.className='key-picker-row';for(const [name,action] of [['Chuột trái','left'],['Chuột phải','right'],['Chuột giữa','middle']]){const b=document.createElement('button');b.type='button';b.textContent=name;b.onclick=()=>{state.onMouse?.(action);dialog.close();};mouseRow.append(b);}dialog.append(mouseRow);
     const manualLabel=document.createElement('label');manualLabel.textContent='Nhập thủ công (R + T hoặc mã phím 82, 84)';manual=document.createElement('input');manual.type='text';manual.autocomplete='off';manualLabel.append(manual);dialog.append(manualLabel);
     error=document.createElement('p');error.className='key-picker-error';error.setAttribute('role','alert');dialog.append(error);
@@ -22,6 +22,6 @@
     dialog.addEventListener('pointerdown',e=>e.stopPropagation());dialog.addEventListener('keydown',e=>e.stopPropagation());document.body.append(dialog);
   }
   function open(options){if(!dialog)build();state={keys:[...(options.keys||[])],single:options.single===true,onApply:options.onApply,onMouse:options.onMouse};mouseRow.hidden=typeof options.onMouse!=='function';dialog.querySelector('#key-picker-title').textContent=options.title||'Chọn phím bất kỳ · tối đa 6 phím cùng lúc';error.textContent='';refresh();if(!dialog.open)dialog.showModal();}
-  root.CloudKeyPicker={open,label,choose};
+  root.CloudKeyPicker={open,label,choose,sections,board};
   if(typeof module==='object')module.exports=root.CloudKeyPicker;
 })(globalThis);

@@ -200,3 +200,4 @@ Sửa máy tính giữ nguyên ID hồ sơ kể cả đổi WebRTC/RDP/Moonlight
 - Copy capture dùng fast bilinear giảm chi phí scale CPU; vẫn không phải zero-copy. GPU capture chỉ bật khi driver/FFmpeg tương thích. Không cam kết 0 ms hay 2K160 trên mọi máy/mạng.
 - Tải RDP dùng attachment trực tiếp từ host với ticket chỉ dành cho file, một lần, 120 giây; không chứa mật khẩu Windows. Host cũ dùng Blob UTF-16 dự phòng. Xuất file không đòi RDP đã bật.
 - Moonlight có quay lại bảng chọn ứng dụng, gồm cả Esc/đóng. Điện thoại chạy Moonlight; host PC cần Sunshine hoặc host giao thức tương thích và PIN lần đầu. WebRTC không thay thế giao thức này.
+Bàn phím ảo và bộ chọn nút dùng cùng bố cục 108 phím (104 phím ANSI + 4 phím âm thanh). Opcode snapshot giữ nguyên; slot 254 dành riêng cho Enter cụm số E0 1C, host cần bản mới. Trên điện thoại có thể cuộn bảng bàn phím để tới cụm số; nút chuột nằm riêng.

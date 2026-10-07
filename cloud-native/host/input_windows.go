@@ -56,6 +56,14 @@ func (s *WindowsSink) Mouse(button byte, down bool) error {
 }
 func (s *WindowsSink) Key(vk uint16, down bool) error {
 	scan, _, _ := mapKey.Call(uintptr(vk), 4)
+	data := keyboardInput(vk, scan, down)
+	return emitInput(1, data[:])
+}
+func keyboardInput(vk uint16, scan uintptr, down bool) [24]byte {
+	// Protocol slot 254 represents the extended keypad Enter (E0 1C).
+	if vk == 254 {
+		vk, scan = 13, 0xe01c
+	}
 	flags := uint32(8)
 	if !down {
 		flags |= 2
@@ -72,7 +80,7 @@ func (s *WindowsSink) Key(vk uint16, down bool) error {
 		binary.LittleEndian.PutUint16(b[2:], uint16(scan&255))
 	}
 	binary.LittleEndian.PutUint32(b[4:], flags)
-	return emitInput(1, b[:])
+	return b
 }
 func (s *WindowsSink) Pad(report PadReport) error {
 	if s.gamepad == nil {
