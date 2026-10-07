@@ -19,7 +19,7 @@ function createSignaling(config){
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cache-Control','no-store');
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' wss: ws:; media-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'");
     const route=req.url.split('?')[0];
-    if(route==='/health'){res.setHeader('Content-Type','application/json');res.end('{"ok":true}');return;}
+    if(route==='/health'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,hostOnline:[...rooms.values()].some(room=>!!room.host)}));return;}
     if(route==='/connection.js'){res.setHeader('Content-Type','text/javascript; charset=utf-8');fs.createReadStream(path.join(__dirname,'connection.js')).pipe(res);return;}
     if(route==='/mouse_controller.js'){res.setHeader('Content-Type','text/javascript; charset=utf-8');fs.createReadStream(path.join(__dirname,'mouse_controller.js')).pipe(res);return;}
     if(route!=='/'&&route!=='/index.html'){res.writeHead(404);res.end('Not found');return;}

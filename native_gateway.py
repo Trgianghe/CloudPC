@@ -8,7 +8,7 @@ import time
 from aiohttp import ClientSession, ClientTimeout, WSMsgType, web
 
 
-def register_native(app, root, authorized, is_host_client, public_origin=''):
+def register_native(app, root, authorized, is_host_client, public_origin='', broadcast=None):
     native = root / 'cloud-native'
 
     def config():
@@ -58,8 +58,13 @@ def register_native(app, root, authorized, is_host_client, public_origin=''):
             except Exception:
                 raise web.HTTPServiceUnavailable(text='Signaling offline')
             await browser.prepare(request)
+            guest_attached=False
+            async def close_guest():
+                await backend.close()
+                await browser.close(code=4001,message=b'Broadcast paused or ended')
 
             async def upstream():
+                nonlocal guest_attached
                 async for message in browser:
                     if message.type != WSMsgType.TEXT:
                         if message.type == WSMsgType.BINARY:
@@ -72,6 +77,13 @@ def register_native(app, root, authorized, is_host_client, public_origin=''):
                             room = data.get('room')
                             setting = cfg.get('rooms', {}).get(room)
                             if setting:
+                                token=data.get('token','')
+                                if isinstance(token,str) and token.startswith('bc_'):
+                                    host_room=json.loads((root/'cloud-native/host.config.json').read_text(encoding='utf-8-sig')).get('room')
+                                    if room!=host_room or not broadcast or guest_attached or not broadcast.attach(token,close_guest):
+                                        await browser.close(code=4003,message=b'Broadcast credentials expired');break
+                                    guest_attached=True
+                                    data['token']=setting['client_token']
                                 stamp = int(time.time())
                                 nonce = secrets.token_hex(16)
                                 guard = is_host_client(request.remote)
@@ -86,6 +98,11 @@ def register_native(app, root, authorized, is_host_client, public_origin=''):
             async def downstream():
                 async for message in backend:
                     if message.type == WSMsgType.TEXT:
+                        if guest_attached:
+                            try:
+                                reply=json.loads(message.data)
+                                if reply.get('type')=='joined':broadcast.connected(close_guest)
+                            except (ValueError,TypeError):pass
                         await browser.send_str(message.data)
                     else:
                         break
@@ -98,6 +115,7 @@ def register_native(app, root, authorized, is_host_client, public_origin=''):
                 for task in tasks:
                     task.cancel()
                 await asyncio.gather(*tasks, return_exceptions=True)
+                if guest_attached:broadcast.detach(close_guest)
                 await backend.close()
                 await browser.close()
         return browser

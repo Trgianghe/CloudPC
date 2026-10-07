@@ -7,7 +7,7 @@ from build_pages import ROOT, build
 def source_files():
     names = ['.gitignore', 'README.md', 'GITHUB-DEPLOY.md', 'Caddyfile.example',
              'config.example.json', 'requirements.txt', 'server.py', 'streaming.py',
-             'ffmpeg_stream.py', 'mouse_input.py', 'native_gateway.py', 'rdp_discovery.py', 'fix_rdp.bat',
+             'ffmpeg_stream.py', 'mouse_input.py', 'native_gateway.py', 'rdp_discovery.py', 'broadcast_service.py', 'fix_rdp.bat',
              'launch_web.ps1', 'open_web.bat', 'start.ps1', 'start_native_backend.ps1']
     files = [ROOT / name for name in names]
     for directory, suffixes in [('web', {'.html','.js','.css','.svg'}),

@@ -32,8 +32,8 @@ try {
     $errLog = Join-Path $logDir "host-$stamp-error.log"
     $serverFile = Join-Path $PSScriptRoot 'server.py'
     # A detached user-session process survives the launcher and browser closing.
-    # Local preview only; start.ps1 remains the configured LAN/cloud entry point.
-    $hostProcess = Start-Process -FilePath $pythonExe -ArgumentList @('-u',('"'+$serverFile+'"'),'--bind','127.0.0.1','--port',$webPort) -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
+    # The authenticated web guest endpoint must be reachable from the configured network.
+    $hostProcess = Start-Process -FilePath $pythonExe -ArgumentList @('-u',('"'+$serverFile+'"'),'--bind',$(if ($webConfig.host) { [string]$webConfig.host } else { '0.0.0.0' }),'--port',$webPort) -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
     $ready = $false
     for ($attempt=0; $attempt -lt 40; $attempt++) {
       if (Test-PCCloud) { $ready=$true; break }

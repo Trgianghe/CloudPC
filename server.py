@@ -26,6 +26,7 @@ from mouse_input import decode_mouse, normalize_absolute
 import shutil
 from native_gateway import register_native
 from rdp_discovery import register_rdp_discovery
+from broadcast_service import Broadcast, register_broadcast
 
 ROOT = Path(__file__).resolve().parent
 if hasattr(sys.stdout, 'reconfigure'):
@@ -380,7 +381,9 @@ async def shutdown(app):
 
 
 app = web.Application(middlewares=[headers], client_max_size=256 * 1024)
-register_native(app, ROOT, authorized, is_host_client, CFG.get('public_origin', ''))
+BROADCAST=Broadcast(ROOT/'runtime_logs/broadcast-preferences.dpapi')
+register_native(app, ROOT, authorized, is_host_client, CFG.get('public_origin', ''), BROADCAST)
+register_broadcast(app, ROOT, BROADCAST)
 app.router.add_get('/', index)
 app.router.add_post('/api/login', login)
 app.router.add_post('/api/offer', offer)

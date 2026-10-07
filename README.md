@@ -158,3 +158,12 @@ Trình duyệt trong ứng dụng đã chặn fetch localhost từ Pages trong k
 ### Moonlight trên điện thoại
 
 Tab **Moonlight** lưu IP/hostname PC chạy Sunshine, quét địa chỉ bằng host local, hiển thị hướng dẫn ghép đôi PIN, link Android/iOS, sao chép IP và link hồ sơ cho điện thoại. Link chỉ chứa tên PC và địa chỉ, không chứa mật khẩu/token/RDP username. Profile mở từ link chưa lưu vào trình duyệt cho đến khi người dùng chọn lưu PC. Hồ sơ không chứng minh Sunshine đang chạy; chưa kiểm thử stream Moonlight với điện thoại thật. Web không cài Sunshine, bật firewall, nhập PIN thay người dùng hay nhúng native Moonlight. Sunshine/Moonlight dùng được mà không cần RDP Pro; thiết lập theo tài liệu chính thức: https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide .
+
+
+## Phát PC và tài khoản khách
+
+Chạy `open_web.bat` trên PC host, mở **Phát PC** trên web local rồi bật phiên. Link phiên tự xác định host; thiết bị khách mở link và nhập tên/mật khẩu, không cần config/phòng. Tạm dừng thu hồi ticket và ngắt signaling của khách; thời gian tạm dừng không tính vào thời gian phát. Kết thúc hiện thống kê. Bật phiên mới tạo tài khoản ngẫu nhiên theo tiền tố; chọn và lưu tài khoản tùy chỉnh để giữ lại. Thông tin tùy chỉnh được Windows DPAPI mã hóa trong `runtime_logs/broadcast-preferences.dpapi`, không xuất lên GitHub. Phiên đang phát không tồn tại sau khi server khởi động lại.
+
+Đây là tài khoản khách của **PC Cloud WebRTC**. RDP vẫn dùng tài khoản Windows; Moonlight ghép PIN với Sunshine; Parsec sử dụng tài khoản và quyền của Parsec. Không tự tạo tài khoản Windows hay bỏ qua xác thực các ứng dụng này. GitHub Pages chỉ chứa giao diện: host phải đang chạy và có địa chỉ HTTPS/WSS hợp lệ khi kết nối từ Pages. Link LAN cần cùng mạng và cổng web được cho phép; launcher không tự mở firewall/router. Không chia sẻ thông tin truy cập qua HTTP trên mạng không tin cậy.
+
+Trong Cloud Setting → Điều khiển → Tùy chỉnh nút, chọn Phím/combo, joystick Di chuyển hoặc Nhìn quanh. Joystick Di chuyển cho chọn riêng bốn phím hướng; Nhìn quanh gửi delta chuột liên tục với vùng chết ở tâm. Nút chọn có tay nắm góc để tăng/giảm kích thước, lưu cùng profile và JSON. Chỉnh bố cục ngừng input vào host; hủy/tắt kết nối nhả các phím đang giữ.

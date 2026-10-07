@@ -22,3 +22,17 @@ test('switching movement style removes old directions but keeps shortcut and act
  const list=[{action:'key',keys:[87]},{action:'key',keys:[17,87]},{action:'left',keys:[]},{action:'joystick',movement:true,keys:[87,65,83,68]}];
  assert.deepEqual(touch.withoutMovement(list),[list[1],list[2]]);
 });
+
+test('look stick sends continuous relative movement and stops on cancel or blocked input',()=>{
+ touch.disposeAll();let pending=null,blocked=false;const sent=[],held=[];
+ const oldRAF=global.requestAnimationFrame,oldCancel=global.cancelAnimationFrame;
+ global.requestAnimationFrame=callback=>{pending=callback;return 1;};global.cancelAnimationFrame=()=>{pending=null;};
+ try{
+ const b={classList:{add(){},remove(){}},ownerDocument:{createElement:()=>({style:{}})},append(){},getBoundingClientRect:()=>({left:0,top:0,width:120,height:120}),setPointerCapture(){}};
+ touch.bindJoystick(b,{stickMode:'look',keys:[87,65,83,68]},{editing:()=>false,blocked:()=>blocked,hold:(...x)=>held.push(x),look:(...x)=>sent.push(x)});
+ const e={clientX:120,clientY:60,pointerId:1,preventDefault(){},stopPropagation(){}};
+ b.onpointerdown(e);pending(performance.now()+16);assert.ok(sent[0][0]>0);assert.equal(sent[0][1],0);assert.deepEqual(held,[]);
+ blocked=true;const nextFrame=pending;pending=null;nextFrame(performance.now()+32);assert.equal(pending,null);assert.equal(sent.length,1);
+ blocked=false;b.onpointerdown(e);b.onpointercancel(e);assert.equal(pending,null);
+ }finally{touch.disposeAll();global.requestAnimationFrame=oldRAF;global.cancelAnimationFrame=oldCancel;}
+});
