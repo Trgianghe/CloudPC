@@ -11,6 +11,7 @@ if (!Array.isArray(machines)) machines = [];
 let activeMode = 'webrtc', editingMachine = null, peer = null, inputChannel = null, sessionToken = null;
 let demo = false, activeSession = false, layoutEditing = false, inputMode = 'game', pingTimer, statsTimer, connectTimer, abortRequest;
 let selfHostViewOnly=false, motionChannel=null, motionSequence=0;
+let rdpScanGeneration=0;
 let connectionGeneration = 0, lastStats = null, toastTimer;
 const heldInputs = new Map();
 const keyNames = {8:'Backspace',9:'Tab',13:'Enter',16:'Shift',17:'Ctrl',18:'Alt',19:'Pause',20:'CapsLock',27:'Esc',32:'Space',33:'PgUp',34:'PgDn',35:'End',36:'Home',37:'←',38:'↑',39:'→',40:'↓',45:'Insert',46:'Delete',91:'Win',186:';',187:'=',188:',',189:'-',190:'.',191:'/',192:'`',219:'[',220:'\\',221:']',222:"'"};
@@ -41,8 +42,9 @@ function renderMachines() {
   for (const id of ['machine-count','list-count']) $(`#${id}`).textContent = machines.length;
   $('#saved-count').innerHTML = `${machines.length} <em>máy tính</em>`;
 }
-function setMode(mode) { activeMode = mode; renderSavedRDP(); $$('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode)); ['webrtc','rdp','external','parsec'].forEach(m => $(`#${m}-fields`).hidden = m !== mode); $('#connect-submit').textContent = mode === 'parsec' ? 'Mở Parsec ↗' : mode === 'rdp' ? 'Tải file .rdp ↓' : mode === 'external' ? 'Mở kết nối ↗' : 'Kết nối ngay ↗'; }
+function setMode(mode) { activeMode = mode; renderSavedRDP(); $('#connection-config-import').hidden=mode==='rdp'; $$('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode)); ['webrtc','rdp','external','parsec'].forEach(m => $(`#${m}-fields`).hidden = m !== mode); $('#connect-submit').textContent = mode === 'parsec' ? 'Mở Parsec ↗' : mode === 'rdp' ? 'Tải file .rdp ↓' : mode === 'external' ? 'Mở kết nối ↗' : 'Kết nối ngay ↗'; }
 function openConnection(machine=null) {
+  rdpScanGeneration++; $('#rdp-scan-status').hidden=true;
   const f = $('#connection-form'); f.reset(); editingMachine = machine?.id || null; $('#form-error').textContent = ''; setMode(machine?.mode || 'webrtc');
   f.elements.code.value=machine?.code||'';f.elements.rememberConfig.checked=machine?.rememberConfig!==false;
   f.dataset.nativeRoom=machine?.nativeRoom||'';f.dataset.nativeSignaling=machine?.nativeSignaling||'';
@@ -62,8 +64,8 @@ function readMachine() {
   return machine;
 }
 function storeMachine(machine) { const index = machines.findIndex(m => m.id === machine.id); if (index >= 0) machines[index] = machine; else machines.push(machine); editingMachine = machine.id; saveStore('pccloud.machines', machines); renderMachines(); }
-function download(name, content, type) { const url = URL.createObjectURL(new Blob([content],{type})); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function downloadRDP(machine) { download('pc-cloud.rdp', `full address:s:${rdpAddress(machine)}\r\nusername:s:${machine.username}\r\nprompt for credentials:i:1\r\nauthentication level:i:2\r\nscreen mode id:i:2\r\ndesktopwidth:i:1920\r\ndesktopheight:i:1080\r\naudiomode:i:0\r\nredirectclipboard:i:1\r\n`, 'application/x-rdp'); toast('Đã tải file RDP. Mở bằng ứng dụng Remote Desktop.'); }
+function download(name, content, type) { const url = URL.createObjectURL(new Blob([content],{type})); const a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
+function downloadRDP(machine) { download('pc-cloud.rdp',CloudRDP.file(machine),'application/x-rdp'); toast('Đã tải file RDP. Mở bằng ứng dụng Remote Desktop.'); }
 function describeKeys(c) { if(c.action==='joystick')return 'Joystick · '+c.keys.map(k=>keyNames[k]||k).join(' / '); return c.action === 'key' ? c.keys.map(k => keyNames[k] || `VK ${k}`).join(' + ') : {'left':'Chuột trái','right':'Chuột phải','middle':'Chuột giữa'}[c.action]; }
 function renderControls() { $('#control-list').innerHTML = controls.map(c => `<article class="control-item"><span class="key-badge">${escapeHTML(c.label)}</span><div><strong>${escapeHTML(describeKeys(c))}</strong><small>${c.hold ? 'Giữ để thao tác' : 'Chạm để nhấn'}</small></div><div class="item-actions"><button class="icon-button" data-edit-control="${escapeHTML(c.id)}" title="Sửa nút">✎</button><button class="icon-button" data-remove-control="${escapeHTML(c.id)}" title="Xóa nút">×</button></div></article>`).join(''); }
 let recordedKeys = [];
@@ -189,19 +191,31 @@ for(const [id,field] of [['rdp-copy-address','address'],['rdp-copy-username','us
 $('#rdp-download').onclick=()=>downloadRDP(displayedRDP);
 $('#rdp-edit').onclick=()=>{$('#rdp-details').close();openConnection(machines.find(m=>m.id===displayedRDP.id)||displayedRDP);};
 
-$('#import-rdp-button').onclick=()=>$('#import-rdp-config').click();
-$('#import-rdp-config').onchange=async e=>{
-  const file=e.target.files[0];if(!file)return;
-  $('#form-error').textContent='';
+
+$('#rdp-scan').onclick=async()=>{
+  const generation=rdpScanGeneration,button=$('#rdp-scan'),status=$('#rdp-scan-status');
+  button.disabled=true;button.textContent='Đang quét…';status.hidden=false;status.textContent='Đang đọc thông tin PC qua dịch vụ CloudPC local…';
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+  const endpoint=['localhost','127.0.0.1','[::1]'].includes(location.hostname)?new URL('/api/rdp-info',location.origin):new URL('http://127.0.0.1:8443/api/rdp-info');
   try{
-    if(file.size>65536)throw new Error('File quá lớn. Giới hạn 64 KB.');
-    const parsed=CloudRDP.parse(CloudRDP.decode(await file.arrayBuffer()),file.name);
-    if(!$('#connection-dialog').open)return;
-    const form=$('#connection-form');setMode('rdp');
+    const response=await fetch(endpoint,{method:'POST',credentials:'omit',cache:'no-store',signal:controller.signal});
+    if(!response.ok)throw new Error('Không đọc được thông tin PC.');
+    const info=await response.json(),parsed=CloudRDP.validate(info);
+    if(generation!==rdpScanGeneration||!$('#connection-dialog').open||activeMode!=='rdp')return;
+    const form=$('#connection-form');
     editingMachine=machines.find(m=>m.mode==='rdp'&&m.host===parsed.host&&Number(m.port)===parsed.port&&m.username===parsed.username)?.id||null;
-    for(const field of ['name','host','port','username'])form.elements[field].value=parsed[field];
+    for(const field of ['name','host','port','username'])form.elements[field].value=parsed[field]||'';
     form.dataset.nativeRoom='';form.dataset.nativeSignaling='';
-    toast('Đã điền thông tin RDP. Bấm Lưu máy tính để dùng lại.');
-  }catch(error){$('#form-error').textContent=error.message;}
-  finally{e.target.value='';}
+    status.textContent='Đã quét '+info.name+' · '+info.edition+'. '+info.message;
+    status.classList.toggle('rdp-not-ready',!info.rdpSupported||!info.rdpEnabled);
+    $('#form-error').textContent='';
+  }catch{
+    if(generation!==rdpScanGeneration)return;
+    status.textContent='Chưa quét được. Trên PC cần quét, chạy open_web.bat trong thư mục CloudPC rồi mở http://127.0.0.1:8443 và bấm Quét máy này. Trên điện thoại, dùng hồ sơ/file đã lưu từ PC.';
+    status.classList.add('rdp-not-ready');
+  }finally{clearTimeout(timeout);button.disabled=false;button.textContent='⌕ Quét máy này';}
+};
+$('#rdp-export').onclick=()=>{
+  try{downloadRDP(readMachine());$('#form-error').textContent='';}
+  catch(error){$('#form-error').textContent=error.message;}
 };

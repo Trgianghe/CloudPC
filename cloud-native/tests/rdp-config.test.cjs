@@ -35,3 +35,9 @@ test('imports IPv6 and rejects missing addresses or conflicting fields',()=>{
  assert.throws(()=>RDP.decode(new Uint8Array(65537)));
  assert.throws(()=>RDP.parse('{"mode":"webrtc","host":"pc"}'));
 });
+test('exported RDP uses UTF16 and preserves Windows usernames without passwords',()=>{
+ const source={host:'192.0.2.20',port:3390,username:'TEST\\Nguyễn'};
+ const bytes=RDP.file(source);assert.equal(bytes[0],255);assert.equal(bytes[1],254);
+ const restored=RDP.parse(RDP.decode(bytes));assert.equal(restored.username,source.username);assert.equal(restored.port,3390);
+ assert.doesNotMatch(RDP.decode(bytes),/password/i);
+});

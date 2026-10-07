@@ -46,5 +46,13 @@
     const machine=validate({host,port,username});
     return {mode:'rdp',name,...machine};
   }
-  const api={validate,address,decode,parse};if(typeof module==='object'&&module.exports)module.exports=api;else root.CloudRDP=api;
+
+  function file(machine){
+    machine=validate(machine);
+    const text='\uFEFFfull address:s:'+address(machine)+'\r\nusername:s:'+machine.username+'\r\nprompt for credentials:i:1\r\nauthentication level:i:2\r\nscreen mode id:i:2\r\ndesktopwidth:i:1920\r\ndesktopheight:i:1080\r\naudiomode:i:0\r\nredirectclipboard:i:1\r\n';
+    const bytes=new Uint8Array(text.length*2),view=new DataView(bytes.buffer);
+    for(let index=0;index<text.length;index++)view.setUint16(index*2,text.charCodeAt(index),true);
+    return bytes;
+  }
+  const api={validate,address,decode,parse,file};if(typeof module==='object'&&module.exports)module.exports=api;else root.CloudRDP=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

@@ -25,6 +25,7 @@ from ffmpeg_stream import NativeDesktopTrack, NativePacketEncoder
 from mouse_input import decode_mouse, normalize_absolute
 import shutil
 from native_gateway import register_native
+from rdp_discovery import register_rdp_discovery
 
 ROOT = Path(__file__).resolve().parent
 if hasattr(sys.stdout, 'reconfigure'):
@@ -384,6 +385,7 @@ app.router.add_get('/', index)
 app.router.add_post('/api/login', login)
 app.router.add_post('/api/offer', offer)
 app.router.add_get('/api/health', health)
+register_rdp_discovery(app)
 app.router.add_static('/assets/', ROOT / 'web')
 app.on_shutdown.append(shutdown)
 if __name__ == '__main__':

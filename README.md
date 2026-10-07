@@ -146,3 +146,9 @@ Checkbox **Ẩn các nút cảm ứng** có hiệu lực ngay và lưu lựa ch�
 Trên thẻ PC RDP, bấm **Thông tin kết nối** để hiện IP/hostname, cổng và tài khoản, sao chép hoặc tải `.rdp`. Chỉ dùng **Sửa thông tin** khi cần đổi cấu hình. Trong tab Remote Desktop có danh sách PC RDP đã lưu. Có thể nhập JSON dạng `{"mode":"rdp","name":"Remote PC","host":"192.168.1.20","port":3389,"username":"Player"}`; mật khẩu không được nhập/lưu qua config này. File `.rdp` điền địa chỉ và tài khoản; mật khẩu do ứng dụng Remote Desktop quản lý. WebRTC host không tự cấp tài khoản Windows hoặc bật RDP.
 
 Trong tab Remote Desktop, nút **Nhập file .rdp / JSON** đọc file ngay trên thiết bị, tự điền IP/cổng/tài khoản; hỗ trợ file Windows UTF-16 và JSON. Kiểm tra rồi bấm **Lưu máy tính**. File thiếu tài khoản thì điền tài khoản Windows đã được cấp; mật khẩu vẫn nhập trong ứng dụng Remote Desktop.
+
+### Quét PC để tạo file Remote Desktop
+
+Tab Remote Desktop dùng **Quét máy này** thay cho nhập JSON: chạy `open_web.bat` trên Windows PC, mở web local và bấm Quét. Dịch vụ đọc IP theo tuyến mạng hiện tại, cổng RDP trong Registry, tài khoản phiên console và trạng thái hỗ trợ/bật RDP; không đọc mật khẩu và không tự bật RDP hay firewall. **Lưu file .rdp** xuất file Windows UTF-16, không chứa mật khẩu. Quét từ Pages cần host local cổng 8443 và trình duyệt cho phép kết nối localhost; nếu không được, mở `http://127.0.0.1:8443/` trên PC. Điện thoại dùng file/hồ sơ đã lưu từ PC, không quét Windows qua trình duyệt điện thoại. Endpoint chỉ nhận yêu cầu loopback và Origin local hoặc `https://trgianghe.github.io`; từ LAN/Origin khác bị từ chối. Windows Home vẫn hiện cảnh báo không nhận RDP.
+
+Kiểm thử quét: endpoint và UI local tự điền được thông tin, kiểm thử quyền truy cập và xuất/đọc lại UTF-16 đã qua. Sự kiện download trong trình duyệt Codex chưa được xác nhận; cần thử tải `.rdp` bằng Chrome.
