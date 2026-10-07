@@ -44,7 +44,7 @@ function renderMachines() {
 }
 function setMode(mode) { activeMode = mode; renderSavedRDP(); $('#connection-config-import').hidden=mode==='rdp'; $$('[data-mode]').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode)); ['webrtc','rdp','external','parsec'].forEach(m => $(`#${m}-fields`).hidden = m !== mode); $('#connect-submit').textContent = mode === 'parsec' ? 'Mở Parsec ↗' : mode === 'rdp' ? 'Tải file .rdp ↓' : mode === 'external' ? 'Mở kết nối ↗' : 'Kết nối ngay ↗'; }
 function openConnection(machine=null) {
-  rdpScanGeneration++; $('#rdp-scan-status').hidden=true;
+  rdpScanGeneration++; $('#rdp-scan-status').hidden=true; $('#rdp-open-local').hidden=true;
   const f = $('#connection-form'); f.reset(); editingMachine = machine?.id || null; $('#form-error').textContent = ''; setMode(machine?.mode || 'webrtc');
   f.elements.code.value=machine?.code||'';f.elements.rememberConfig.checked=machine?.rememberConfig!==false;
   f.dataset.nativeRoom=machine?.nativeRoom||'';f.dataset.nativeSignaling=machine?.nativeSignaling||'';
@@ -194,7 +194,7 @@ $('#rdp-edit').onclick=()=>{$('#rdp-details').close();openConnection(machines.fi
 
 $('#rdp-scan').onclick=async()=>{
   const generation=rdpScanGeneration,button=$('#rdp-scan'),status=$('#rdp-scan-status');
-  button.disabled=true;button.textContent='Đang quét…';status.hidden=false;status.textContent='Đang đọc thông tin PC qua dịch vụ CloudPC local…';
+  button.disabled=true;button.textContent='Đang quét…';status.hidden=false;$('#rdp-open-local').hidden=true;status.textContent='Đang đọc thông tin PC qua dịch vụ CloudPC local…';
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
   const endpoint=['localhost','127.0.0.1','[::1]'].includes(location.hostname)?new URL('/api/rdp-info',location.origin):new URL('http://127.0.0.1:8443/api/rdp-info');
   try{
@@ -212,10 +212,16 @@ $('#rdp-scan').onclick=async()=>{
   }catch{
     if(generation!==rdpScanGeneration)return;
     status.textContent='Chưa quét được. Trên PC cần quét, chạy open_web.bat trong thư mục CloudPC rồi mở http://127.0.0.1:8443 và bấm Quét máy này. Trên điện thoại, dùng hồ sơ/file đã lưu từ PC.';
-    status.classList.add('rdp-not-ready');
+    status.classList.add('rdp-not-ready');$('#rdp-open-local').hidden=false;
   }finally{clearTimeout(timeout);button.disabled=false;button.textContent='⌕ Quét máy này';}
 };
 $('#rdp-export').onclick=()=>{
   try{downloadRDP(readMachine());$('#form-error').textContent='';}
   catch(error){$('#form-error').textContent=error.message;}
 };
+
+if(params.get('rdp')==='scan'){
+  openConnection({mode:'rdp',name:'PC của tôi'});
+  $('#rdp-scan').click();
+  history.replaceState({},'',location.pathname);
+}
