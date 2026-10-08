@@ -159,7 +159,7 @@ def register_broadcast(app,root,manager):
         cfg=json.loads((root/'cloud-native/host.config.json').read_text(encoding='utf-8-sig'))
         return {'room':cfg['room'],'name':info['name'],'apps':{
             'webrtc':{'label':'PC Cloud · trên web'},
-            'rdp':{'label':'Remote Desktop','host':info['host'],'port':info['port'],'username':info['username'],'supported':info['rdpSupported'],'enabled':info['rdpEnabled'],'message':info['message']},
+            'rdp':{'label':'Remote Desktop','host':info['host'],'port':info['port'],'username':info['username'],'supported':info['rdpSupported'],'enabled':info['rdpEnabled'],'listening':info.get('rdpListening'), 'message':info['message']},
             'moonlight':{'label':'Moonlight / Sunshine','host':info['host'],'message':'Thêm địa chỉ này trong Moonlight. Cần Sunshine đang chạy trên PC; ghép đôi bằng PIN trên Sunshine. Chưa kiểm tra trạng thái Sunshine.'},
             'parsec':{'label':'Parsec','url':'https://web.parsec.app/','message':'Đăng nhập tài khoản Parsec được host cấp quyền. Tài khoản Phát PC không phải tài khoản Parsec.'}}}
     def cors(request):
@@ -244,7 +244,9 @@ def register_broadcast(app,root,manager):
                 info=await asyncio.to_thread(collect_info)
                 # Re-check after awaiting metadata: stop/new-session must not issue a stale download grant.
                 fresh=manager.guest_state(data['access']);result['state']=fresh['state']
-                if fresh['state']!='off':result['rdpDownload']=manager.rdp_download(info)
+                if fresh['state']!='off':
+                    result['rdpDownload']=manager.rdp_download(info)
+                    result['rdpStatus']={'supported':info['rdpSupported'],'enabled':info['rdpEnabled'],'listening':info.get('rdpListening'),'message':info.get('message','')}
             if 'ticket' in result:
                 cfg=json.loads((root/'cloud-native/host.config.json').read_text(encoding='utf-8-sig'));result['room']=cfg['room']
             return web.json_response(result,headers=headers)

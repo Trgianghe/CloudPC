@@ -15,6 +15,10 @@
   if(!selected)return;const m=machines.find(x=>x.id===selected.id)||selected;selected=m;const app=$('#guest-app').value,value=appsFor(m)[app]||{};
   $('#guest-name').textContent=m.name;$('#guest-state').textContent=playing===m.id?'Đang chơi · kết nối web':labels[m.broadcastState||'unknown'];$('#guest-delete').hidden=!isEnded(m);
   $('#guest-message').textContent=value.message||(app==='webrtc'?'Hồ sơ đã lưu. Bấm kết nối để vào PC; không cần nhập lại thông tin.':'');
+  if(app==='rdp'){
+   const status=value.supported===false?'PC này dùng Windows Home, không nhận kết nối Remote Desktop. Dùng Kết nối trên web hoặc Windows Pro/Enterprise.':value.enabled===false?'Remote Desktop đang tắt trên host. Bật Settings → System → Remote Desktop rồi mở lại thông tin PC.':value.listening===false?'Cổng RDP trên host chưa lắng nghe. Kiểm tra dịch vụ Remote Desktop Services.':'';
+   $('#guest-message').textContent=(status||value.message||'Kiểm tra Remote Desktop đã bật trên host.')+' File .rdp chỉ lưu địa chỉ và tài khoản Windows, không bật RDP. Khác Wi-Fi cần VPN/RD Gateway; link HTTPS Phát PC chỉ dùng cho web. Đăng nhập bằng mật khẩu Windows, không dùng mật khẩu Phát PC.';
+  }
   if(app==='moonlight')$('#guest-message').textContent='Trên điện thoại mở Moonlight rồi thêm IP phía trên. Đã ghép đôi thì vào PC ngay; thiết bị mới cần chủ PC xác nhận PIN một lần.';
   if(m.broadcastState==='paused')$('#guest-message').textContent='PC đã tạm dừng. Đợi chủ máy tiếp tục, sau đó bấm kết nối lại.';
   if(isEnded(m))$('#guest-message').textContent='Quyền truy cập phiên này đã hết hạn. Chủ máy bật lại sẽ tạo phiên mới; dùng tài khoản mới để thêm PC.';
@@ -31,7 +35,7 @@
  }
  async function refresh(m){
   if(!m.access||isEnded(m))return;
-  try{const data=await api(m);m={...m,broadcastState:data.state,rdpDownload:data.rdpDownload};}
+  try{const data=await api(m);m={...m,broadcastState:data.state,rdpDownload:data.rdpDownload};if(data.rdpStatus)m.apps={...appsFor(m),rdp:{...appsFor(m).rdp,...data.rdpStatus}};}
   catch(error){m={...m,broadcastState:error.state==='expired'?'expired':'offline'};}
   remember(m);if(selected?.id===m.id)paint();
   if(playing===m.id&&m.broadcastState!=='running'){playing=null;await disconnect();toast(labels[m.broadcastState]);}

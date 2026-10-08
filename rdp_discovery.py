@@ -82,10 +82,15 @@ def collect_info():
         except OSError:
             address = hostname
     supported = not edition.lower().startswith(('core', 'home'))
+    listening=False
+    try:
+        with socket.create_connection(('127.0.0.1',port),timeout=.25):listening=True
+    except OSError:pass
     return {'name': hostname, 'host': address, 'port': port, 'username': console_account(),
-            'edition': edition, 'rdpSupported': supported, 'rdpEnabled': enabled,
+            'edition': edition, 'rdpSupported': supported, 'rdpEnabled': enabled, 'rdpListening': listening,
             'message': ('Windows Home không hỗ trợ nhận kết nối RDP. Vẫn lưu được thông tin; dùng PC Cloud hoặc Windows Pro để kết nối.' if not supported else
                         'RDP đang tắt. Bật Settings → System → Remote Desktop trước khi kết nối.' if not enabled else
+                        'RDP đã bật nhưng cổng chưa lắng nghe. Kiểm tra dịch vụ Remote Desktop Services trên PC host.' if not listening else
                         'RDP đã bật. Dùng địa chỉ này từ máy khác cùng mạng; kết nối ngoài mạng cần VPN hoặc RD Gateway.')}
 
 
