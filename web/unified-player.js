@@ -10,7 +10,8 @@
     if(e.data?.type==='pccloud-exit')disconnect();
   });
   connect=async function(machine,code){
-    if(!machine.nativeSignaling&&machine.url!==location.origin)return oldConnect(machine,code);
+    const prefs=CloudPCPreferences.resolve(localStorage,machine.id);
+    if(!machine.nativeSignaling&&machine.url!==location.origin)return oldConnect({...machine,bitrate:prefs.bitrate,fps:prefs.fps,width:{'720p120':1280,'1080p120':1920,'2k60':2560,'4k60':3840}[prefs.preset]},code);
     if(!code)throw new Error('Nhập mã truy cập của PC host.');
     await disconnect();const current=++pending;
     let config;
@@ -26,7 +27,7 @@
     $('#session').classList.add('native-session');immersive(true);
     frame=document.createElement('iframe');frame.id='native-player';frame.title='Cloud PC';
     frame.allow='autoplay; fullscreen; gamepad';frame.src=playerURL();
-    frame.onload=()=>{if(current===pending){if(config.signaling)frame.contentDocument.getElementById('signal-url').value=config.signaling;frame.contentWindow.postMessage({type:'pccloud-connect',config,touchControls:controls,localInput:true,bitrate:machine.bitrate||15,fps:machine.fps??120,preset:machine.width>=3840?'4k60':machine.width>=2560?'2k60':machine.width<=1280?'720p120':'1080p120'},location.origin);}};
+    frame.onload=()=>{if(current===pending){if(config.signaling)frame.contentDocument.getElementById('signal-url').value=config.signaling;frame.contentWindow.postMessage({type:'pccloud-connect',config,touchControls:controls,localInput:true,machineKey:machine.id,bitrate:prefs.bitrate,fps:prefs.fps,preset:prefs.preset},location.origin);}};
     $('#session').append(frame);
   };
   $('#disconnect').onclick=()=>disconnect();

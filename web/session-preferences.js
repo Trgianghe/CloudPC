@@ -1,0 +1,16 @@
+(() => {
+ 'use strict';
+ const model=CloudPCPreferences;let machineKey=null,baseline={},applying=false;
+ const card=document.createElement('div');card.className='cloud-card';card.innerHTML='<span class="caption" id="preferences-source">Mặc định chung</span><p class="muted">Các mục thay đổi tại đây được ghi nhớ riêng cho PC này.</p><button type="button" class="action" id="reset-pc-preferences">Dùng mặc định chung</button>';
+ $('#settings .scroll').prepend(card);
+ function capture(){return {...desiredSettings(),adaptive:$('#adaptive-latency').checked,sensitivity:Number($('#mouse-sensitivity').value),volume:Number($('#audio-volume').value),sound:$('#sound').getAttribute('aria-checked')==='true',hideControls:$('#hide-controls').checked,hud:$('#show-hud').checked,awake:$('#keep-awake').checked};}
+ function source(){const own=machineKey&&Object.keys(model.override(localStorage,machineKey)).length;$('#preferences-source').textContent=own?'Tùy chỉnh riêng cho PC này':'Mặc định chung';$('#reset-pc-preferences').disabled=!own;}
+ function apply(){applying=true;try{const p=model.resolve(localStorage,machineKey);S.bitrate=p.bitrate;S.fps=p.fps;S.preset=p.preset;S.codec=p.codec;$('#bitrate').value=p.bitrate;$('#bitrate-value').textContent=p.bitrate+' Mbps';$('#latency-mode').value=p.playoutDelay;$('#adaptive-latency').checked=p.adaptive;latencyGuard.reset();$('#mouse-sensitivity').value=p.sensitivity;mouse.sensitivity=p.sensitivity;$('#sensitivity-value').textContent=p.sensitivity.toFixed(1)+'×';$('#audio-volume').value=p.volume;$('#audio').volume=p.volume/100;setSwitch('#sound',p.sound);$('#audio').muted=!p.sound;$('#hide-controls').checked=p.hideControls;S.touch=S.mobile&&!p.hideControls;$('#show-hud').checked=p.hud;$('#stream-hud').hidden=!p.hud;const awakeChanged=$('#keep-awake').checked!==p.awake;$('#keep-awake').checked=p.awake;if(awakeChanged)$('#keep-awake').onchange?.();selectButtons();renderControls();baseline=model.clean(capture());source();}catch{toast('Không đọc được cài đặt đã lưu.');}finally{applying=false;}}
+ function save(){if(applying||!machineKey)return;const next=model.clean(capture()),patch=model.diff(baseline,next);if(!Object.keys(patch).length)return;try{model.savePatch(localStorage,machineKey,patch);baseline=next;source();}catch{toast('Không lưu được cài đặt riêng của PC.');}}
+ window.PCSessionPreferences={connect(id){machineKey=typeof id==='string'?id:null;apply();},save,apply};
+ $('#reset-pc-preferences').onclick=async()=>{try{const old=desiredSettings();model.reset(localStorage,machineKey);apply();originalChanged();for(const r of peer?.getReceivers()||[])applyReceiverDelay(r);if(peer&&(old.codec!==S.codec||old.playoutDelay!==Number($('#latency-mode').value)))await makeOffer();toast('PC này đang dùng mặc định chung.');}catch(e){toast(e.message);}};
+ const ids=new Set(['sound','hide-controls','show-hud','keep-awake','adaptive-latency','mouse-sensitivity','audio-volume','latency-mode']);
+ // Save only explicit UI changes, never the adaptive guard's effective bitrate/FPS.
+ for(const type of ['change','input','click'])document.addEventListener(type,e=>{if(ids.has(e.target.id)||e.target.closest('#codecs'))queueMicrotask(save);});
+ apply();
+})();
