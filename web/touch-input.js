@@ -12,7 +12,7 @@
     const named={CTRL:17,CONTROL:17,SHIFT:16,ALT:18,WIN:91,META:91,SPACE:32,ENTER:13,TAB:9,ESC:27,ESCAPE:27,BACKSPACE:8,DELETE:46,INSERT:45,HOME:36,END:35,PAGEUP:33,PAGEDOWN:34,UP:38,DOWN:40,LEFT:37,RIGHT:39};
     const parts=String(text).toUpperCase().split(/[+,]/).map(s=>s.trim());
     const keys=parts.map(s=>named[s]||(/^[A-Z]$/.test(s)?s.charCodeAt(0):/^F([1-9]|1[0-2])$/.test(s)?111+Number(s.slice(1)):/^[0-9]$/.test(s)?s.charCodeAt(0):/^\d+$/.test(s)?Number(s):0));
-    if(!keys.length||keys.length>6||keys.some(k=>!Number.isInteger(k)||k<1||k>254))throw Error('Dùng Ctrl + C, Shift + W hoặc mã phím 17, 67; tối đa 6 phím.');
+    if(!keys.length||keys.some(k=>!Number.isInteger(k)||k<1||k>254))throw Error('Dùng Ctrl + C, Shift + W hoặc mã phím 17, 67.');
     return [...new Set(keys)];
   }
   function withoutMovement(controls){return controls.filter(c=>!c.movement&&!(c.action==='key'&&c.keys?.length===1&&[87,65,83,68,38,37,40,39].includes(c.keys[0])));}

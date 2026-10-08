@@ -18,3 +18,12 @@ test('custom joystick directions and non-modifier combo survive profile migratio
  const saved=JSON.parse(store.get('pccloud.profiles')).profiles[0].controls;
  assert.deepEqual(saved[0].keys,[82,84]);assert.deepEqual(saved[1].keys,[38,65,83,68]);assert.equal(saved[1].action,'joystick');assert.equal(saved[1].size,150);assert.equal(saved[2].stickMode,'look');assert.equal(saved[2].size,200);
 });
+
+test('large keyboard and controller combos survive profile save and validation intact',()=>{
+ const store=new Map(),context={CloudTouch:{id:()=> 'fallback'},crypto:{randomUUID:()=> 'id'},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},profiles:[],controls:[]};
+ const keys=require('../../web/key-picker.js').sections.flatMap(s=>s.rows.flat()),buttons=Object.keys(require('../../web/virtual-pad.js').buttons);
+ context.controls=[{id:'all-keys',label:'Full keyboard',vk:27,keys,action:'key',x:20,y:70},{id:'all-pad',label:'Full controller',vk:32,keys:[32],inputType:'gamepad',padButtons:buttons,action:'key',x:80,y:70}];
+ vm.createContext(context);vm.runInContext(validate+'\n'+sync+'\ncontrols=validateControls(controls);syncDashboardProfile("All inputs");',context);
+ const saved=JSON.parse(store.get('pccloud.profiles')).profiles[0].controls;
+ assert.deepEqual(saved[0].keys,keys);assert.deepEqual(saved[1].padButtons,buttons);
+});
