@@ -22,19 +22,20 @@ import (
 )
 
 type Config struct {
-	Signaling     string `json:"signaling"`
-	Room          string `json:"room"`
-	HostToken     string `json:"host_token"`
-	FFmpeg        string `json:"ffmpeg"`
-	Encoder       string `json:"encoder"`
-	CaptureMode   string `json:"capture_mode"`
-	Adapter       int    `json:"adapter"`
-	Output        int    `json:"output"`
-	AudioEndpoint string `json:"audio_endpoint"`
-	Audio         bool   `json:"audio"`
-	ViGEmDLL      string `json:"vigem_dll"`
-	AllowReboot   bool   `json:"allow_reboot"`
-	ViewOnly      bool   `json:"view_only"`
+	Signaling       string `json:"signaling"`
+	Room            string `json:"room"`
+	HostToken       string `json:"host_token"`
+	FFmpeg          string `json:"ffmpeg"`
+	Encoder         string `json:"encoder"`
+	FallbackEncoder string `json:"fallback_encoder,omitempty"`
+	CaptureMode     string `json:"capture_mode"`
+	Adapter         int    `json:"adapter"`
+	Output          int    `json:"output"`
+	AudioEndpoint   string `json:"audio_endpoint"`
+	Audio           bool   `json:"audio"`
+	ViGEmDLL        string `json:"vigem_dll"`
+	AllowReboot     bool   `json:"allow_reboot"`
+	ViewOnly        bool   `json:"view_only"`
 }
 type Message struct {
 	Type       string                   `json:"type"`

@@ -88,6 +88,8 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 	bytes := make([]byte, 2048)
 	metricStart := time.Now()
 	frames := 0
+	firstFrameDeadline := time.Now().Add(10 * time.Second)
+	haveVideo := false
 	for {
 		if ctx.Err() != nil {
 			return nil
@@ -101,6 +103,9 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 		count, _, readErr := socket.ReadFromUDP(bytes)
 		if readErr != nil {
 			if timeout, ok := readErr.(net.Error); ok && timeout.Timeout() {
+				if !haveVideo && time.Now().After(firstFrameDeadline) {
+					return fmt.Errorf("không nhận được frame desktop trong 10 giây; kiểm tra màn hình host, phiên console hoặc driver capture")
+				}
 				continue
 			}
 			return readErr
@@ -112,6 +117,7 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 		if err = packet.Unmarshal(bytes[:count]); err != nil {
 			return fmt.Errorf("invalid encoder RTP: %w", err)
 		}
+		haveVideo = true
 		if packet.Marker {
 			frames++
 		}

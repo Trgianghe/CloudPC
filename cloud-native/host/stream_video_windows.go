@@ -15,6 +15,8 @@ func (s *Session) streamVideo(ctx context.Context, settings StreamSettings) erro
 	if ctx.Err() != nil {
 		return nil
 	}
+	releasePower := keepDisplayForStream()
+	defer releasePower()
 	if track, ok := s.video.(*webrtc.TrackLocalStaticRTP); ok {
 		metrics := make(chan float64, 1)
 		go func() {
@@ -32,7 +34,10 @@ func (s *Session) streamVideo(ctx context.Context, settings StreamSettings) erro
 			fallback := s.config
 			fallback.CaptureMode = "copy"
 			fallback.Adapter = 0
-			_ = s.writer.Send(map[string]any{"type": "status", "status": map[string]any{"capture": "DXGI → CPU scaling → AMF encoder (fallback)", "mouseGeometry": streamGeometry(fallback, settings), "message": "AMF capture chưa sẵn sàng; đang dùng DXGI dự phòng."}})
+			if s.config.FallbackEncoder == "nvenc" || s.config.FallbackEncoder == "amf" {
+				fallback.Encoder = s.config.FallbackEncoder
+			}
+			_ = s.writer.Send(map[string]any{"type": "status", "status": map[string]any{"capture": "DXGI → CPU scaling → " + fallback.Encoder + " (fallback)", "mouseGeometry": streamGeometry(fallback, settings), "message": "AMF capture chưa sẵn sàng; đang dùng DXGI dự phòng."}})
 			return VideoRTPStream(ctx, fallback, settings, track, &s.rtpBridge, metrics)
 		}
 		return err
