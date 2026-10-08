@@ -1,0 +1,17 @@
+/* Preserve circular action geometry when labels wrap or flex rows shrink. */
+.icon-button{display:inline-grid;place-items:center;flex:0 0 auto;aspect-ratio:1;padding:0;line-height:1}
+.machine-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.machine-card{min-width:0}
+.machine-card h4{overflow-wrap:anywhere}
+.machine-card .card-top{gap:12px;align-items:center}
+.machine-card .pc-icon{flex-shrink:0}
+.machine-card .offline-label{min-width:0;text-align:right;white-space:normal;overflow-wrap:anywhere}
+.card-actions{align-items:center}
+.card-actions .button{min-width:0;white-space:normal;overflow-wrap:anywhere;min-height:36px;line-height:1.4}
+.card-actions .icon-button{width:36px;height:36px;min-width:36px;min-height:36px}
+.dialog-heading{gap:16px}
+.dialog-heading>div{min-width:0}
+.dialog-heading h2{overflow-wrap:anywhere}
+.dialog-heading .icon-button{width:36px;height:36px}
+@media(max-width:1150px){.machine-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.machine-grid{grid-template-columns:minmax(0,1fr)}.card-actions .icon-button{width:44px;height:44px;min-width:44px;min-height:44px}.card-actions .button{min-height:44px}.dialog-heading .icon-button{width:44px;height:44px}}
