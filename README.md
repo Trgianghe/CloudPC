@@ -213,3 +213,7 @@ Trong phiên stream, host gửi yêu cầu SetThreadExecutionState giữ desktop
 ### Web latency guard
 
 The integrated player measures per-interval video decode time, jitter-buffer residence and packet loss. Auto load reduction is enabled by default: after three consecutive overloaded samples it reduces bitrate for network backlog (>60 ms) or packet loss (>3%), and FPS only when decode time exceeds 90% of the requested frame budget. Resolution is preserved. Reconfiguration has a 20-second cooldown because changing encoder settings restarts capture. Manual quality changes clear the cap; disabling the toggle restores manual settings. Idle-host FPS and ping alone never trigger quality reduction. This is overload mitigation, not a claim of zero input-to-photon latency.
+
+### AMF RTP presentation clock
+
+For AMF GPU capture, the host timestamps each encoded RTP access unit once using the local monotonic clock. All fragments of that frame share the timestamp. Repeated AMF source PTS no longer produce one-tick presentation bursts at the receiver. The clock measures host RTP output cadence, not physical capture-to-display latency; frames are neither duplicated nor artificially paced. NVENC continues to preserve its source timestamps.

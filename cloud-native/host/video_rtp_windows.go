@@ -90,6 +90,7 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 	frames := 0
 	firstFrameDeadline := time.Now().Add(10 * time.Second)
 	haveVideo := false
+	var amfClock frameClock
 	for {
 		if ctx.Err() != nil {
 			return nil
@@ -116,6 +117,9 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 		var packet rtp.Packet
 		if err = packet.Unmarshal(bytes[:count]); err != nil {
 			return fmt.Errorf("invalid encoder RTP: %w", err)
+		}
+		if config.CaptureMode == "amf" {
+			amfClock.Stamp(&packet, time.Now())
 		}
 		haveVideo = true
 		if packet.Marker {
