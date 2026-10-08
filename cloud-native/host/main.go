@@ -106,6 +106,9 @@ func (s *Session) RestartVideo(settings StreamSettings) error {
 	s.videoCancel = cancel
 	s.lastVideoStart = time.Now()
 	capture := "DXGI → GPU texture → " + s.config.Encoder + " (no CPU frame download)"
+	if s.config.CaptureMode == "amf" {
+		capture = "AMF capture → GPU scaling → AMF encoder (no CPU frame download)"
+	}
 	if s.config.CaptureMode == "copy" {
 		capture = "DXGI → CPU scaling → " + s.config.Encoder + " (copy mode)"
 	}
@@ -382,8 +385,11 @@ func main() {
 	if config.CaptureMode == "" {
 		config.CaptureMode = "gpu"
 	}
-	if config.CaptureMode != "gpu" && config.CaptureMode != "copy" {
-		log.Fatal("capture_mode must be gpu or copy")
+	if config.CaptureMode != "gpu" && config.CaptureMode != "copy" && config.CaptureMode != "amf" {
+		log.Fatal("capture_mode must be gpu, copy or amf")
+	}
+	if config.CaptureMode == "amf" && config.Encoder != "amf" {
+		log.Fatal("AMF capture requires encoder amf")
 	}
 	if config.Encoder != "nvenc" && config.Encoder != "amf" {
 		log.Fatal("encoder must be nvenc or amf")

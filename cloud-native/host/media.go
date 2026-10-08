@@ -80,27 +80,35 @@ func videoCommand(config Config, s StreamSettings) []string {
 	w, h, fps := s.Dimensions()
 	bitrate := s.Bitrate * 1000000
 	args := []string{"-hide_banner", "-loglevel", "error", "-nostdin", "-filter_threads", "4"}
-	if config.CaptureMode == "gpu" {
-		args = append(args, "-init_hw_device", fmt.Sprintf("d3d11va=display:%d", config.Adapter), "-filter_hw_device", "display")
-	}
-	// DXGI pointer metadata is not composited into the encoder surface.
-	args = append(args, "-f", "lavfi", "-i", fmt.Sprintf("ddagrab=output_idx=%d:framerate=%d:draw_mouse=0", config.Output, fps))
-	if config.CaptureMode == "gpu" {
-		args = append(args, "-vf", fmt.Sprintf("scale_d3d11=width=%d:height=%d:format=nv12", w, h))
+	if config.CaptureMode == "amf" {
+		args = append(args, "-init_hw_device", fmt.Sprintf("amf=display:%d", config.Adapter), "-filter_hw_device", "display", "-filter_complex", fmt.Sprintf("vsrc_amf=monitor_index=%d:framerate=%d:capture_mode=0,vpp_amf=w=%d:h=%d:format=nv12:force_original_aspect_ratio=decrease:force_divisible_by=2,settb=1/90000,setpts=if(isnan(PREV_OUTPTS)\\,PTS\\,max(PTS\\,PREV_OUTPTS+1))", config.Output, fps, w, h))
 	} else {
-		args = append(args, "-vf", fmt.Sprintf("hwdownload,format=bgra,scale=%d:%d:flags=fast_bilinear:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,format=yuv420p", w, h, w, h))
+		if config.CaptureMode == "gpu" {
+			args = append(args, "-init_hw_device", fmt.Sprintf("d3d11va=display:%d", config.Adapter), "-filter_hw_device", "display")
+		}
+		args = append(args, "-f", "lavfi", "-i", fmt.Sprintf("ddagrab=output_idx=%d:framerate=%d:draw_mouse=0", config.Output, fps))
+		if config.CaptureMode == "gpu" {
+			args = append(args, "-vf", fmt.Sprintf("scale_d3d11=width=%d:height=%d:format=nv12", w, h))
+		} else {
+			args = append(args, "-vf", fmt.Sprintf("hwdownload,format=bgra,scale=%d:%d:flags=fast_bilinear:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,format=yuv420p", w, h, w, h))
+		}
 	}
 	codec := map[string]string{"h264": "h264", "hevc": "hevc", "av1": "av1"}[s.Codec] + "_" + config.Encoder
 	args = append(args, "-an", "-c:v", codec)
 	if config.Encoder == "nvenc" {
 		args = append(args, "-preset", "p1", "-tune", "ull", "-rc", "cbr", "-zerolatency", "1", "-rc-lookahead", "0", "-delay", "0")
 	} else {
-		args = append(args, "-usage", "ultralowlatency", "-quality", "speed", "-rc", "cbr")
+		args = append(args, "-usage", "ultralowlatency", "-quality", "speed", "-rc", "cbr", "-async_depth", "1", "-preanalysis", "false", "-preencode", "false")
 	}
 	args = append(args, "-b:v", fmt.Sprint(bitrate), "-maxrate", fmt.Sprint(bitrate), "-bufsize", fmt.Sprint(bitrate/fps), "-bf", "0", "-g", fmt.Sprint(max(1, fps/2)), "-r", fmt.Sprint(fps), "-fps_mode", "cfr", "-flush_packets", "1")
 	// Without global_header, NVENC emits SPS/PPS (VPS for HEVC) on IDRs.
 	if s.Codec == "h264" {
-		args = append(args, "-profile:v", "baseline", "-aud", "1", "-f", "h264")
+		profile := "baseline"
+		if config.Encoder == "amf" {
+			profile = "constrained_baseline"
+			args = append(args, "-header_spacing", fmt.Sprint(max(1, fps/2)), "-forced_idr", "1", "-force_key_frames", "expr:gte(t,n_forced*0.5)")
+		}
+		args = append(args, "-profile:v", profile, "-aud", "1", "-f", "h264")
 	} else if s.Codec == "hevc" {
 		args = append(args, "-aud", "1", "-f", "hevc")
 	} else {

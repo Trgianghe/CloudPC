@@ -201,3 +201,10 @@ Sửa máy tính giữ nguyên ID hồ sơ kể cả đổi WebRTC/RDP/Moonlight
 - Tải RDP dùng attachment trực tiếp từ host với ticket chỉ dành cho file, một lần, 120 giây; không chứa mật khẩu Windows. Host cũ dùng Blob UTF-16 dự phòng. Xuất file không đòi RDP đã bật.
 - Moonlight có quay lại bảng chọn ứng dụng, gồm cả Esc/đóng. Điện thoại chạy Moonlight; host PC cần Sunshine hoặc host giao thức tương thích và PIN lần đầu. WebRTC không thay thế giao thức này.
 Bàn phím ảo và bộ chọn nút dùng cùng bố cục 108 phím (104 phím ANSI + 4 phím âm thanh). Opcode snapshot giữ nguyên; slot 254 dành riêng cho Enter cụm số E0 1C, host cần bản mới. Trên điện thoại có thể cuộn bảng bàn phím để tới cụm số; nút chuột nằm riêng.
+
+### GPU pipeline trên laptop AMD + NVIDIA (2026-10-08)
+
+Cấu hình `encoder: amf`, `capture_mode: amf` dùng `vsrc_amf → vpp_amf → h264_amf` cùng GPU AMD xuất màn hình. Giữ tỷ lệ ảnh, encoder async_depth=1, tắt preanalysis/preencode/B-frame; RTP đi thẳng đến WebRTC. Nhịp timestamp đơn điệu tránh gộp hai frame trùng timestamp; IDR và SPS/PPS lặp mỗi 0,5 giây để decoder có thể bắt lại hình. GPU AMD, driver AMF và FFmpeg có cả vsrc_amf/vpp_amf là điều kiện bắt buộc; không áp dụng cấu hình này cho host chỉ có NVIDIA. Các mode copy/gpu vẫn được giữ. Backup cấu hình riêng trước khi đổi mode.
+
+Cloud Setting → Phiên hiển thị FPS mã hóa tại host riêng với FPS giải mã/trình bày ở client. FPS game cần đo tại game hoặc công cụ đo Present; không suy ra từ stream. Tốc độ encode benchmark không tương đương FPS game hay độ trễ click-to-photon.
+AMF capture dừng qua lệnh q để giải phóng tài nguyên driver; nếu capture khởi tạo lỗi, host tự dùng DXGI copy + AMF encoder và báo fallback rõ trong Cloud Setting. Nếu hết 2 giây vẫn không thoát mới cưỡng chế dừng. Không coi benchmark capture là bằng chứng độ trễ điện thoại đã được sửa.

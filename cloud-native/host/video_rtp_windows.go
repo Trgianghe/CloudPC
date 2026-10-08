@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v4"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -31,7 +32,7 @@ func videoRTPCommand(config Config, settings StreamSettings, port int) []string 
 	return append(args, "-payload_type", "96", "-f", "rtp", fmt.Sprintf("rtp://127.0.0.1:%d?pkt_size=1200", port))
 }
 
-func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings, track *webrtc.TrackLocalStaticRTP, bridge *rtpBridge) error {
+func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings, track *webrtc.TrackLocalStaticRTP, bridge *rtpBridge, metrics chan<- float64) error {
 	socket, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
 	if err != nil {
 		return err
@@ -39,7 +40,26 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 	defer socket.Close()
 	// Local encoder socket only; never buffers multiple whole frames in userspace.
 	_ = socket.SetReadBuffer(1024 * 1024)
-	command := hiddenCommand(ctx, config.FFmpeg, videoRTPCommand(config, settings, socket.LocalAddr().(*net.UDPAddr).Port)...)
+	args := videoRTPCommand(config, settings, socket.LocalAddr().(*net.UDPAddr).Port)
+	commandContext := ctx
+	if config.CaptureMode == "amf" {
+		commandContext = context.Background()
+		filtered := args[:0]
+		for _, arg := range args {
+			if arg != "-nostdin" {
+				filtered = append(filtered, arg)
+			}
+		}
+		args = filtered
+	}
+	command := hiddenCommand(commandContext, config.FFmpeg, args...)
+	var control io.WriteCloser
+	if config.CaptureMode == "amf" {
+		control, err = command.StdinPipe()
+		if err != nil {
+			return err
+		}
+	}
 	var stderr tailWriter
 	command.Stderr = &stderr
 	if err = command.Start(); err != nil {
@@ -49,14 +69,25 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 	done := make(chan error, 1)
 	go func() { done <- command.Wait(); close(done) }()
 	defer func() {
+		if control != nil {
+			_, _ = io.WriteString(control, "q\n")
+			_ = control.Close()
+			select {
+			case <-done:
+				return
+			case <-time.After(2 * time.Second):
+			}
+		}
 		if command.Process != nil {
 			_ = command.Process.Kill()
 		}
-		<-done // Do not leave encoder resource teardown running behind a restart.
+		<-done
 	}()
 	_, _, fps := settings.Dimensions()
 	forward := bridge.stream(fps, track.WriteRTP)
 	bytes := make([]byte, 2048)
+	metricStart := time.Now()
+	frames := 0
 	for {
 		if ctx.Err() != nil {
 			return nil
@@ -80,6 +111,16 @@ func VideoRTPStream(ctx context.Context, config Config, settings StreamSettings,
 		var packet rtp.Packet
 		if err = packet.Unmarshal(bytes[:count]); err != nil {
 			return fmt.Errorf("invalid encoder RTP: %w", err)
+		}
+		if packet.Marker {
+			frames++
+		}
+		if elapsed := time.Since(metricStart); elapsed >= time.Second {
+			select {
+			case metrics <- float64(frames) / elapsed.Seconds():
+			default:
+			}
+			frames, metricStart = 0, time.Now()
 		}
 		if err = forward(&packet); err != nil {
 			return err

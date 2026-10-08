@@ -63,7 +63,6 @@
  $('#guest-app').onchange=()=>{if(selected){selected.lastApp=$('#guest-app').value;remember(selected);}paint();};
  $('#guest-copy').onclick=()=>selected&&copy(fields(selected,$('#guest-app').value).filter(([,v])=>v).map(([k,v])=>k+': '+v).join('\n'));
  $('#guest-delete').onclick=()=>{if(!selected||!isEnded(selected))return;machines=machines.filter(m=>m.id!==selected.id);saveStore('pccloud.machines',machines);renderMachines();$('#guest-details').close();selected=null;};
- $('#guest-back').onclick=()=>{$('#guest-details').close();showView('machines');};
  $('#guest-rdp-download').onclick=()=>toast('Đang tải file .rdp. Mở file bằng Remote Desktop / Windows App.');
  function backFrom(dialog){
   if(detailReturn?.dialog===dialog){const context=detailReturn;detailReturn=null;show(machines.find(m=>m.id===context.machine.id)||context.machine);return;}
