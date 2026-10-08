@@ -5,19 +5,19 @@
  const view=document.createElement('section');view.id='settings';view.className='view';view.hidden=true;
  view.innerHTML=`<div class="page-heading"><div><p class="eyebrow">YOUR DEFAULTS</p><h1>Cài đặt <span>mặc định.</span></h1><p>Một bộ cài đặt cho mọi PC. Điều chỉnh riêng từng máy trong Cloud PC Settings.</p></div></div>
  <form id="default-settings-form" class="defaults-panel"><div class="defaults-heading"><h3>Hình ảnh & phản hồi</h3><p>Áp dụng khi mở phiên web mới, kể cả PC đã lưu trước đây.</p></div><div class="defaults-grid">
- <label>Độ phân giải<select name="preset"><option value="720p120">HD · 1280 × 720</option><option value="1080p120">Full HD · 1920 × 1080</option><option value="2k60">2K · 2560 × 1440</option><option value="4k60">4K · 3840 × 2160</option></select></label>
- <label>FPS mục tiêu<input name="fps" type="number" min="0" max="500" required><small>0 = không khóa FPS; hiệu năng phụ thuộc host.</small></label>
- <label>Bitrate (Mbps)<input name="bitrate" type="number" min="5" max="100" required></label>
- <label>Codec<select name="codec"><option value="h264">H.264 · tương thích rộng</option><option value="av1">AV1</option><option value="hevc">HEVC</option></select><small>Host và trình duyệt phải hỗ trợ codec đã chọn.</small></label>
- <label>Bộ đệm nhận<select name="playoutDelay"><option value="0">Ưu tiên phản hồi nhanh</option><option value="30">Ổn định khi mạng dao động</option></select></label>
- <label>Độ nhạy chuột<input name="sensitivity" type="number" min="0.2" max="3" step="0.1" required></label>
- <label>Âm lượng (%)<input name="volume" type="number" min="0" max="100" required></label></div>
+ <label><span>Độ phân giải</span><select name="preset"><option value="720p120">HD · 1280 × 720</option><option value="1080p120">Full HD · 1920 × 1080</option><option value="2k60">2K · 2560 × 1440</option><option value="4k60">4K · 3840 × 2160</option></select></label>
+ <label><span>FPS mục tiêu</span><input name="fps" type="number" min="0" max="500" required><small>0 = không khóa FPS; hiệu năng phụ thuộc host.</small></label>
+ <label><span>Bitrate (Mbps)</span><input name="bitrate" type="number" min="5" max="100" required></label>
+ <label><span>Codec</span><select name="codec"><option value="h264">H.264 · tương thích rộng</option><option value="av1">AV1</option><option value="hevc">HEVC</option></select><small>Host và trình duyệt phải hỗ trợ codec đã chọn.</small></label>
+ <label><span>Bộ đệm nhận</span><select name="playoutDelay"><option value="0">Ưu tiên phản hồi nhanh</option><option value="30">Ổn định khi mạng dao động</option></select></label>
+ <label><span>Độ nhạy chuột</span><input name="sensitivity" type="number" min="0.2" max="3" step="0.1" required></label>
+ <label><span>Âm lượng (%)</span><input name="volume" type="number" min="0" max="100" required></label></div>
  <div class="defaults-heading"><h3>Trong phiên chơi</h3></div><div class="defaults-toggles">
- <label><input name="adaptive" type="checkbox"> Tự giảm tải khi đo được hình bị trễ</label>
- <label><input name="sound" type="checkbox"> Phát âm thanh PC</label>
- <label><input name="hideControls" type="checkbox"> Ẩn nút cảm ứng trên điện thoại / iPad</label>
- <label><input name="hud" type="checkbox"> Hiện thông số khi chơi</label>
- <label><input name="awake" type="checkbox"> Giữ màn hình sáng nếu trình duyệt hỗ trợ</label></div>
+ <label><input name="adaptive" type="checkbox"><span>Tự giảm tải khi hình trễ</span></label>
+ <label><input name="sound" type="checkbox"><span>Phát âm thanh PC</span></label>
+ <label><input name="hideControls" type="checkbox"><span>Ẩn nút cảm ứng</span></label>
+ <label><input name="hud" type="checkbox"><span>Hiện thông số khi chơi</span></label>
+ <label><input name="awake" type="checkbox"><span>Giữ màn hình sáng</span></label></div>
  <p class="field-hint">Cài đặt lưu trên trình duyệt này và dùng cho phiên PC Cloud Web. PC có tùy chỉnh riêng sẽ giữ các mục đã đổi. Trong Cloud PC Settings, chọn “Dùng mặc định chung” để bỏ tùy chỉnh riêng.</p>
  <div class="defaults-actions"><button class="button primary" type="submit">Lưu mặc định</button><button class="button secondary" type="button" id="factory-defaults">Khôi phục mặc định</button><span id="defaults-status" role="status"></span></div></form>`;
  document.querySelector('main').append(view);
