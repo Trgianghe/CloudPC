@@ -56,3 +56,22 @@ GitHub Pages không làm encoding nhanh hơn. Không bảo đảm 0 ms hoặc d�
 trên mọi thiết bị/mạng; cần đo phiên thật trên điện thoại.
 
 Tài liệu Pages: https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
+
+## Phát PC cùng Wi-Fi và khác mạng
+
+Chạy `open_web.bat` bản mới trên **PC được điều khiển**, vào Phát PC trên web local.
+GitHub Pages chỉ chạy giao diện; PC host phải đang bật engine native.
+
+- Cùng Wi-Fi: chia sẻ **Link cùng Wi-Fi**. Link mở giao diện ngay trên địa chỉ LAN của host, tránh trình duyệt chặn Pages HTTPS gọi host HTTP. Host cần cho phép cổng web trong Windows Firewall trên mạng riêng. Chuột tuyệt đối và nút cảm ứng dùng được qua HTTP; Pointer Lock và một số API tay cầm cần ngữ cảnh HTTPS an toàn, nên dùng link HTTPS khi chơi FPS.
+- Khác mạng: bấm **Bật link Internet HTTPS**, chờ trạng thái sẵn sàng rồi chia sẻ **Link khác mạng · GitHub**. Host tải cloudflared từ release chính thức và kiểm tra SHA256 trước khi chạy. Có thể dùng `public_origin` HTTPS cố định thay cho tunnel tạm.
+- Copy **toàn bộ tài khoản** và mật khẩu đang hiển thị. Phần sau dấu `~` trong tài khoản mang địa chỉ host, không chứa mật khẩu; nhờ vậy trang Thêm máy tính tìm đúng PC. Link cũng tự điền tên và địa chỉ, bạn chỉ nhập mật khẩu. Tài khoản cũ hết hạn sau khi kết thúc/bật phiên mới. Khi đổi/dừng tunnel, phải dùng link/tài khoản mới.
+- Quick Tunnel chỉ chuyển HTTP/WebSocket cho đăng nhập và signaling. Hình, tiếng và input đi qua WebRTC, không qua tunnel HTTP. Nếu NAT/mạng di động chặn kết nối ngang hàng, cần TURN thật trong `ice_servers` của signaling và host; dùng cùng cấu hình URL/tài khoản TURN theo tài liệu nhà cung cấp. Không có TURN thì chưa bảo đảm video qua mọi mạng.
+- Link HTTPS này **không** chuyển cổng RDP hoặc Moonlight. Các app đó vẫn cần Sunshine/RDP đang chạy và đường mạng riêng thích hợp (LAN/VPN hoặc cấu hình mạng của app). Tài khoản Phát PC không thay tài khoản Windows/Parsec.
+
+Chỉ guest có mật khẩu phiên được cấp ticket WebRTC. API quản trị Phát PC chỉ chấp nhận địa chỉ/Host local, bị chặn trên domain tunnel. Dừng link bằng nút trong Phát PC hoặc `scripts/start_public.ps1 -Stop`.
+
+Nguồn: https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/ và https://webrtc.org/getting-started/turn-server
+
+## Chọn nút bàn phím / tay cầm
+
+Trong Tùy chỉnh nút trên điện thoại/iPad, thêm nút rồi chọn **Bàn phím** (đủ 108 phím) hoặc **Tay cầm** (hình Xbox có nhãn). Bấm lại một nút để bỏ chọn; nhiều nút được giữ cùng lúc. Chọn loại joystick Xbox để dùng analog trái/phải thật. Host cần ViGEmBus đã cài và capabilities gamepad bật; thiếu driver sẽ báo rõ, không tự gửi thành phím bàn phím. Lưu profile và JSON giữ cả loại nút, combo Xbox và loại analog.

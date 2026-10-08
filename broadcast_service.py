@@ -6,10 +6,12 @@ import hashlib
 import json
 import os
 import secrets
+import subprocess
 import time
 from pathlib import Path
 from aiohttp import web, ClientSession, ClientTimeout, ClientError
 from rdp_discovery import allowed_request, collect_info
+from public_connection import links, public_origin
 
 
 def protect(text, decrypt=False):
@@ -162,12 +164,26 @@ def register_broadcast(app,root,manager):
             'parsec':{'label':'Parsec','url':'https://web.parsec.app/','message':'Đăng nhập tài khoản Parsec được host cấp quyền. Tài khoản Phát PC không phải tài khoản Parsec.'}}}
     def cors(request):
         origin=request.headers.get('Origin');allowed={f'{request.scheme}://{request.host}','https://trgianghe.github.io'}
+        try: configured=json.loads((root/'config.json').read_text(encoding='utf-8-sig')).get('public_origin','')
+        except (OSError,ValueError): configured=''
+        allowed.add(public_origin(root,configured))
         if origin and origin not in allowed:raise web.HTTPForbidden(text='Trang này không được phép đăng nhập phiên phát.')
-        headers={'Cache-Control':'no-store','Vary':'Origin'}
+        headers={'Cache-Control':'no-store','Vary':'Origin','Access-Control-Allow-Private-Network':'true'}
         if origin:headers.update({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS'})
         return headers
 
+    tunnel_task=None; tunnel_error=""
+    async def tunnel(stop=False):
+        nonlocal tunnel_error
+        try:
+            powershell=str(Path(os.environ.get('SystemRoot','C:/Windows'))/'System32/WindowsPowerShell/v1.0/powershell.exe')
+            process=await asyncio.create_subprocess_exec(powershell,"-NoProfile","-ExecutionPolicy","Bypass","-File",str(root/"scripts/start_public.ps1"),*(["-Stop"] if stop else []),stdout=asyncio.subprocess.DEVNULL,stderr=asyncio.subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            _,error=await process.communicate()
+            if process.returncode:tunnel_error="Không bật được link Internet. Kiểm tra runtime_logs hoặc cấu hình public_origin HTTPS."
+        except OSError:tunnel_error="Chức năng link Internet cần PC host Windows."
+
     async def owner(request):
+        nonlocal tunnel_task,tunnel_error
         if not allowed_request(request):raise web.HTTPForbidden(text='Mở mục Phát PC trên web local của chính PC host.')
         headers=cors(request)
         if request.headers.get('Origin'):headers['Access-Control-Allow-Private-Network']='true'
@@ -176,6 +192,10 @@ def register_broadcast(app,root,manager):
             data=await request.json()
             if not isinstance(data,dict):raise ValueError('Yêu cầu không hợp lệ.')
             action=data.get('action','status')
+            if action in ('internet-start','internet-stop'):
+                if tunnel_task and not tunnel_task.done():raise ValueError('Đang tạo link Internet, vui lòng đợi.')
+                tunnel_error='';tunnel_task=asyncio.create_task(tunnel(action=='internet-stop'))
+                action='status'
             if action=='start':
                 cfg=json.loads((root/'cloud-native/server.config.json').read_text(encoding='utf-8-sig'))
                 url=f"{'https' if cfg.get('tls_cert') else 'http'}://127.0.0.1:{int(cfg.get('port',9443))}/health"
@@ -191,7 +211,9 @@ def register_broadcast(app,root,manager):
             try:
                 info=await asyncio.to_thread(collect_info);cfg=json.loads((root/'config.json').read_text(encoding='utf-8-sig'))
                 origin=cfg.get('public_origin') or f'{request.scheme}://{info["host"]}:{request.url.port or 8443}'
-                result.update(hostName=info['name'],joinURL=origin.rstrip('/')+'/?join=1',rdpSupported=info['rdpSupported'])
+                lan=f'{request.scheme}://{info["host"]}:{request.url.port or 8443}'
+                result.update(hostName=info['name'],rdpSupported=info['rdpSupported'],**links(root,lan,manager.username,cfg.get('public_origin','')))
+                result.update(internetState='starting' if tunnel_task and not tunnel_task.done() else 'ready' if result['internetOrigin'] else 'off',internetMessage=tunnel_error)
             except (OSError,RuntimeError,ValueError):result.update(hostName='PC host',joinURL='')
             return web.json_response(result,headers=headers)
         except (ValueError,TypeError,OSError) as error:return web.json_response({'error':str(error)},status=400,headers=headers)

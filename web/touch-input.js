@@ -20,15 +20,16 @@
     button.classList.add('touch-joystick');button.textContent='';
     const knob=button.ownerDocument.createElement('span');knob.className='joystick-knob';knob.textContent=control.label||'Di chuyển';button.append(knob);
     let pointer=null,drag=false,held=new Set(),frame=null,deflection=[0,0],last=0;
-    const looking=control.stickMode==='look';
+    const padMode=control.inputType==='gamepad',looking=!padMode&&control.stickMode==='look';
     function lookFrame(now){frame=null;if(pointer===null||drag)return;if(options.blocked()||options.editing()){reset();return;}const dt=Math.min(32,Math.max(0,now-last))/1000;last=now;const [x,y]=deflection;if(Math.hypot(x,y)>.2)options.look?.(Math.round(x*900*dt),Math.round(y*900*dt));frame=root.requestAnimationFrame(lookFrame);}
     const mapping=control.keys?.length===4?control.keys:[87,65,83,68];
-    function reset(){if(frame!==null)root.cancelAnimationFrame(frame);frame=null;deflection=[0,0];for(const vk of held)options.hold(vk,false);held.clear();pointer=null;drag=false;knob.style.transform='translate(0px,0px)';button.classList.remove('held','pressed');}
+    function reset(){if(frame!==null)root.cancelAnimationFrame(frame);frame=null;deflection=[0,0];if(padMode&&pointer!==null&&!drag)options.axes?.(0,0);for(const vk of held)options.hold(vk,false);held.clear();pointer=null;drag=false;knob.style.transform='translate(0px,0px)';button.classList.remove('held','pressed');}
     function move(e){
       const box=button.getBoundingClientRect(),radius=Math.min(box.width,box.height)/2;
       let x=(e.clientX-box.left-radius)/radius,y=(e.clientY-box.top-radius)/radius;
       const magnitude=Math.hypot(x,y);if(magnitude>1){x/=magnitude;y/=magnitude;}
-      deflection=[x,y];const next=new Set(looking?[]:directions(x,y).map(i=>mapping[i]));
+      if(Math.hypot(x,y)<.2&&padMode)x=y=0;
+      deflection=[x,y];if(padMode)options.axes?.(x,y);const next=new Set(looking||padMode?[]:directions(x,y).map(i=>mapping[i]));
       for(const vk of held)if(!next.has(vk))options.hold(vk,false);
       for(const vk of next)if(!held.has(vk))options.hold(vk,true);
       held=next;knob.style.transform=`translate(${x*radius*.55}px,${y*radius*.55}px)`;

@@ -9,8 +9,8 @@
   const active=state.state!=='off',running=state.state==='running';
   $('#broadcast-state').textContent={off:'Chưa bật',running:'Đang phát',paused:'Đang tạm dừng'}[state.state];
   $('#broadcast-start').hidden=active;$('#broadcast-pause').hidden=!active;$('#broadcast-stop').hidden=!active;
-  $('#broadcast-pause').textContent=running?'Tạm dừng':'Tiếp tục';$('#broadcast-access').hidden=!active;
-  $('#broadcast-username').value=state.username;$('#broadcast-password').value=state.password;$('#broadcast-link').value=state.joinURL||'';
+  $('#broadcast-pause').textContent=running?'Tạm dừng':'Tiếp tục';$('#broadcast-access').hidden=!active;$('#internet-link-state').textContent=state.internetMessage||(state.internetState==='starting'?'Đang tạo link HTTPS…':state.internetOrigin?'Link Internet đã sẵn sàng.':'Khác mạng: bật link HTTPS trước khi chia sẻ tài khoản.');$('#internet-start').disabled=state.internetState==='starting';$('#internet-stop').hidden=!state.internetOrigin;$('#lan-join-link').value=state.lanJoinURL||'';$('#public-join-link').value=state.publicJoinURL||'';
+  const accountOrigin=state.internetOrigin||state.lanJoinURL;$('#broadcast-username').value=accountOrigin&&state.username?CloudSessionLink.account(state.username,accountOrigin):state.username;$('#broadcast-password').value=state.password;$('#broadcast-link').value=state.joinURL||'';
   $('#broadcast-viewers').textContent=state.connected;$('#broadcast-connections').textContent=active?state.connections:0;
   $('#broadcast-paused').textContent=duration(active?state.pausedSeconds:0);
   for(const id of ['broadcast-custom','broadcast-prefix','broadcast-custom-name','broadcast-custom-password','broadcast-save'])$('#'+id).disabled=active;
@@ -34,6 +34,7 @@
   const data=[['Thời gian đang phát',duration(value.activeSeconds)],['Thời gian tạm dừng',duration(value.pausedSeconds)],['Tổng thời gian phiên',duration(value.elapsedSeconds)],['Lượt kết nối',String(value.connections)],['Bắt đầu',new Date(value.startedAt*1000).toLocaleString('vi-VN')],['Kết thúc',new Date(value.endedAt*1000).toLocaleString('vi-VN')],['Tài khoản',value.custom?'Tùy chỉnh':'Ngẫu nhiên']];
   const area=$('#broadcast-summary-body');area.replaceChildren();for(const [title,text] of data){const row=document.createElement('div'),label=document.createElement('small'),strong=document.createElement('strong');label.textContent=title;strong.textContent=text;row.append(label,strong);area.append(row);}$('#broadcast-summary').showModal();
  }
+ $('#internet-start').onclick=()=>owner('internet-start');$('#internet-stop').onclick=()=>owner('internet-stop');
  $('#broadcast-open').onclick=()=>{showView('broadcast');owner();};
  $('#broadcast-start').onclick=()=>owner('start');$('#broadcast-pause').onclick=()=>owner(state?.state==='paused'?'resume':'pause');$('#broadcast-stop').onclick=()=>owner('stop');
  $('#broadcast-custom').onchange=mode;
@@ -46,5 +47,5 @@
   const data=await response.json();if(!response.ok)throw Error(data.error||'Đăng nhập không thành công.');return data;
  }};
  if(params.get('broadcast')==='1'){showView('broadcast');owner();history.replaceState({},'',location.pathname);}
- if(params.get('join')==='1'){openConnection({name:params.get('name')||'My Gaming PC',mode:'webrtc',authType:'broadcast',url:location.origin});history.replaceState({},'',location.pathname);}
+ if(params.get('join')==='1'){openConnection({name:params.get('name')||'My Gaming PC',mode:'webrtc',authType:'broadcast',url:params.get('host')||location.origin});history.replaceState({},'',location.pathname);}
 })();

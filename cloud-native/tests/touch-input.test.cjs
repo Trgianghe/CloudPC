@@ -23,6 +23,16 @@ test('switching movement style removes old directions but keeps shortcut and act
  assert.deepEqual(touch.withoutMovement(list),[list[1],list[2]]);
 });
 
+test('Xbox joystick sends analog axes immediately and cancel resets them without keyboard events',()=>{
+ touch.disposeAll();const axes=[],held=[];let editing=false;
+ const b={classList:{add(){},remove(){}},ownerDocument:{createElement:()=>({style:{}})},append(){},getBoundingClientRect:()=>({left:0,top:0,width:120,height:120}),setPointerCapture(){}};
+ touch.bindJoystick(b,{inputType:'gamepad',padStick:'right',keys:[87,65,83,68]},{editing:()=>editing,blocked:()=>false,select(){},axes:(...x)=>axes.push(x),hold:(...x)=>held.push(x)});
+ const e={clientX:120,clientY:60,pointerId:1,preventDefault(){},stopPropagation(){}};
+ b.onpointerdown(e);assert.deepEqual(axes,[[1,0]]);assert.deepEqual(held,[]);
+ b.onpointercancel(e);assert.deepEqual(axes.at(-1),[0,0]);
+ editing=true;b.onpointerdown(e);b.onpointercancel(e);assert.equal(axes.length,2);touch.disposeAll();
+});
+
 test('look stick sends continuous relative movement and stops on cancel or blocked input',()=>{
  touch.disposeAll();let pending=null,blocked=false;const sent=[],held=[];
  const oldRAF=global.requestAnimationFrame,oldCancel=global.cancelAnimationFrame;

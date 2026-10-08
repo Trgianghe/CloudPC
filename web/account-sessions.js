@@ -40,15 +40,15 @@
   selected=m;const choices=appsFor(m),select=$('#guest-app');select.replaceChildren();for(const [id,value] of Object.entries(choices)){const option=document.createElement('option');option.value=id;option.textContent=id==='moonlight'?'Moonlight':value.label;select.append(option);}if(m.lastApp&&choices[m.lastApp])select.value=m.lastApp;paint();if(!$('#guest-details').open)$('#guest-details').showModal();refresh(m);
  }
  function openLogin(m=null){
-  rdpScanGeneration++;loginId=m?.id||null;const f=$('#connection-form');f.reset();f.classList.add('account-only');f.dataset.editId=loginId||'';f.elements.name.value='PC đang phát';f.elements.broadcastUsername.value=m?.broadcastUsername||'';f.elements.cloudAuth.value='broadcast';setMode('webrtc');
-  loginOrigin=m?.url||(params.get('join')==='1'?location.origin:readStore('pccloud.join-origin',''))||(!window.PCCloudDeployment?.static?location.origin:'');
+  rdpScanGeneration++;loginId=m?.id||null;const f=$('#connection-form');f.reset();f.classList.add('account-only');f.dataset.editId=loginId||'';f.elements.name.value='PC đang phát';f.elements.broadcastUsername.value=m?.broadcastUsername||params.get('name')||'';f.elements.cloudAuth.value='broadcast';setMode('webrtc');
+  loginOrigin=m?.url||(params.get('host')?CloudSessionLink.origin(params.get('host')):'')||(params.get('join')==='1'?location.origin:readStore('pccloud.join-origin',''))||(!window.PCCloudDeployment?.static?location.origin:'');
   $('#connection-title').textContent='Thêm máy tính của bạn';$('#connect-submit').textContent='Đăng nhập & thêm PC';$('#connect-submit').disabled=false;$('#form-error').textContent='';$('#connection-dialog').showModal();
  }
  async function add(form){
   const generation=rdpScanGeneration,button=$('#connect-submit');if(button.disabled)return;button.disabled=true;$('#form-error').textContent='';
   try{
-   const username=form.elements.broadcastUsername.value.trim(),password=form.elements.broadcastPassword.value;if(!username||!password)throw Error('Nhập tài khoản và mật khẩu Phát PC.');
-   const origin=loginOrigin||machines.find(m=>m.broadcastUsername===username)?.url;
+   const routed=CloudSessionLink.route(form.elements.broadcastUsername.value.trim()),username=routed.username,password=form.elements.broadcastPassword.value;if(!username||!password)throw Error('Nhập tài khoản và mật khẩu Phát PC.');
+   const origin=routed.origin||loginOrigin||machines.find(m=>m.broadcastUsername===username)?.url;
    if(!origin)throw Error('Mở link Phát PC do chủ máy gửi một lần để web nhận diện PC. Sau đó chỉ nhập tài khoản và mật khẩu.');
    const machine={url:safeURL(origin).origin,broadcastUsername:username};const data=await CloudBroadcast.authenticate(machine,password);
    if(generation!==rdpScanGeneration||!$('#connection-dialog').open)return;
@@ -90,8 +90,10 @@
  };
  document.addEventListener('click',e=>{const button=e.target.closest('[data-copy-field]');if(button)copy($('#'+button.dataset.copyField).value);});
  Object.assign(CloudBroadcast,{openLogin,add,show,card});
+ $('#connection-form').elements.broadcastUsername.maxLength=1024;
+ $('#connection-form').elements.broadcastUsername.addEventListener('change',e=>{const route=CloudSessionLink.route(e.target.value.trim());if(window.PCCloudDeployment?.static&&route.origin.startsWith('http:'))location.assign(route.origin+'/?join=1&name='+encodeURIComponent(route.username));});
  const originalDisconnect=disconnect;disconnect=async function(){playing=null;await originalDisconnect();renderMachines();};$('#disconnect').onclick=()=>disconnect();
- if(params.get('join')==='1'){saveStore('pccloud.join-origin',location.origin);loginOrigin=location.origin;openLogin();}
+ if(params.get('join')==='1'){const host=params.get('host')?CloudSessionLink.origin(params.get('host')):location.origin;saveStore('pccloud.join-origin',host);loginOrigin=host;openLogin();}
  else if($('#connection-dialog').open)openLogin();
  renderMachines();
  async function poll(){if(busy||document.hidden)return;busy=true;try{for(const m of machines.filter(m=>m.access&&!isEnded(m)))await refresh(m);}finally{busy=false;}}

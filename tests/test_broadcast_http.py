@@ -51,5 +51,17 @@ class BroadcastHTTPTests(unittest.IsolatedAsyncioTestCase):
         response=await self.post('/api/broadcast/session',{'access':'invalid'})
         self.assertEqual(response.status,401);self.assertEqual((await response.json())['state'],'expired')
 
+    async def test_https_route_allows_guest_cors_but_never_owner_operations(self):
+        root=Path(self.directory.name)
+        (root/'config.json').write_text(json.dumps({'public_origin':'https://pc.example.com'}))
+        response=await self.client.post('/api/broadcast/login',json={'username':'qa-session','password':'qa-test-password-only'},headers={'Origin':'https://pc.example.com'})
+        self.assertEqual(response.status,200)
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'],'https://pc.example.com')
+        response=await self.client.post('/api/broadcast',json={'action':'stop'},headers={'Host':'pc.example.com','Origin':'https://pc.example.com'})
+        self.assertEqual(response.status,403)
+        self.assertEqual(self.manager.state,'running')
+        response=await self.client.post('/api/broadcast/login',json={},headers={'Origin':'https://evil.example'})
+        self.assertEqual(response.status,403)
+
 
 if __name__=='__main__':unittest.main()

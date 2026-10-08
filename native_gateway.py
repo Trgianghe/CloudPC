@@ -6,6 +6,8 @@ import json
 import secrets
 import time
 from aiohttp import ClientSession, ClientTimeout, WSMsgType, web
+from public_connection import public_origin as current_public_origin
+from urllib.parse import urlsplit
 
 
 def register_native(app, root, authorized, is_host_client, public_origin='', broadcast=None):
@@ -47,7 +49,10 @@ def register_native(app, root, authorized, is_host_client, public_origin='', bro
     async def signal(request):
         cfg = config()
         allowed = {f'{request.scheme}://{request.host}', public_origin.rstrip('/')}
+        if broadcast is not None:allowed.add('https://trgianghe.github.io')
         allowed.update(cfg.get('client_origins', []))
+        active_public=current_public_origin(root,public_origin)
+        if active_public:allowed.add(active_public)
         if request.headers.get('Origin') not in allowed:
             raise web.HTTPForbidden(text='Open the player on this host.')
         address = endpoint(cfg)
@@ -86,7 +91,7 @@ def register_native(app, root, authorized, is_host_client, public_origin='', bro
                                     data['token']=setting['client_token']
                                 stamp = int(time.time())
                                 nonce = secrets.token_hex(16)
-                                guard = is_host_client(request.remote)
+                                guard = is_host_client(request.remote) and request.host != urlsplit(active_public).netloc
                                 payload = f'{room}|{int(guard)}|{stamp}|{nonce}'
                                 signature = hmac.new(setting['host_token'].encode(), payload.encode(), hashlib.sha256).hexdigest()
                                 data.update(proxySelfHost=guard, proxyTime=stamp, proxyNonce=nonce, proxySignature=signature)
